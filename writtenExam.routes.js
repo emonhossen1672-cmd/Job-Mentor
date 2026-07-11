@@ -1,4 +1,4 @@
-       // ============================================
+   // ============================================
 // Written Exam Routes + AI Evaluation Logic
 // ============================================
 // প্রয়োজনীয় প্যাকেজ: express, pg (বা তোমার existing db pool), axios
@@ -180,5 +180,26 @@ router.get('/written-submissions/:id', /* requireAuth, */ async (req, res) => {
   }
 });
 
+// ---------- 7b. Student: নিজের সব জমার তালিকা (ফলাফল ট্যাবের জন্য) ----------
+router.get('/written-submissions', /* requireAuth, */ async (req, res) => {
+  const { student_id } = req.query;
+  if (!student_id) return res.status(400).json({ error: 'student_id আবশ্যক' });
+  try {
+    const result = await pool.query(
+      `SELECT s.id, s.status, s.submitted_at, q.subject, q.question_text, q.marks, e.admin_score
+       FROM written_submissions s
+       LEFT JOIN written_questions q ON s.question_id = q.id
+       LEFT JOIN written_evaluations e ON e.submission_id = s.id
+       WHERE s.student_id = $1
+       ORDER BY s.submitted_at DESC`,
+      [student_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'তালিকা লোড করা যায়নি' });
+  }
+});
+
 module.exports = router;
-              
+               
