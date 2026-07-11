@@ -1,49 +1,83 @@
-const express = require('express');
+const express = require("express");
+const pool = require("./db");
 
 const router = express.Router();
 
-// সব MCQ দেখার API
-router.get('/', async (req, res) => {
-  res.json({
-    success: true,
-    message: 'All MCQs API Working',
-    data: []
-  });
+/* ===========================
+   নতুন MCQ যোগ করা
+=========================== */
+router.post("/", async (req, res) => {
+  try {
+    const {
+      subject,
+      chapter,
+      topic,
+      question,
+      option_a,
+      option_b,
+      option_c,
+      option_d,
+      correct_answer,
+      explanation,
+      difficulty
+    } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO mcqs
+      (subject, chapter, topic, question,
+       option_a, option_b, option_c, option_d,
+       correct_answer, explanation, difficulty)
+
+       VALUES
+       ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+
+       RETURNING *`,
+      [
+        subject,
+        chapter,
+        topic,
+        question,
+        option_a,
+        option_b,
+        option_c,
+        option_d,
+        correct_answer,
+        explanation,
+        difficulty || "Easy"
+      ]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "MCQ Added Successfully",
+      data: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
 });
 
-// একটি MCQ দেখার API
-router.get('/:id', async (req, res) => {
-  res.json({
-    success: true,
-    id: req.params.id
-  });
-});
+/* ===========================
+   সব MCQ দেখা
+=========================== */
+router.get("/", async (req, res) => {
 
-// নতুন MCQ যোগ করার API
-router.post('/', async (req, res) => {
-  res.json({
-    success: true,
-    message: 'MCQ Added Successfully',
-    body: req.body
-  });
-});
+  const result = await pool.query(
+    "SELECT * FROM mcqs ORDER BY id DESC"
+  );
 
-// MCQ আপডেট করার API
-router.put('/:id', async (req, res) => {
   res.json({
     success: true,
-    message: 'MCQ Updated Successfully',
-    id: req.params.id
+    total: result.rows.length,
+    data: result.rows
   });
-});
 
-// MCQ ডিলিট করার API
-router.delete('/:id', async (req, res) => {
-  res.json({
-    success: true,
-    message: 'MCQ Deleted Successfully',
-    id: req.params.id
-  });
 });
 
 module.exports = router;
