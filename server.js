@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const initWrittenExamTables = require('./initWrittenExamDb');
+const initMcqTable = require('./initMcqDb');
 const writtenExamRoutes = require('./writtenExam.routes');
 const uploadRoutes = require('./upload.routes');
 const mcqRoutes = require('./mcq.routes');
