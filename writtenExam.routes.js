@@ -7,7 +7,7 @@
 const express = require('express');
 const axios = require('axios');
 const router = express.Router();
-const pool = require('../db'); // তোমার existing PostgreSQL pool — path নিজের প্রজেক্ট অনুযায়ী ঠিক করে নাও
+const pool = require('./db');
 // const { requireAuth, requireAdmin } = require('../middleware/auth'); // তোমার existing auth middleware
 
 // ---------- 1. Admin: প্রশ্ন তৈরি ----------
@@ -40,10 +40,10 @@ router.get('/written-questions', /* requireAuth, */ async (req, res) => {
   }
 });
 
-// ---------- 3. Student: উত্তর জমা (ছবি অথবা PDF — file_type দিয়ে বোঝানো হয়) ----------
+// ---------- 3. Student: উত্তর জমা (ছবি অথবা PDF) ----------
+// এখন কোনো AI মূল্যায়ন হয় না — সরাসরি Admin এর রিভিউ কিউতে যায়
 router.post('/written-submissions', /* requireAuth, */ async (req, res) => {
   const { student_id, question_id, image_urls, file_type } = req.body;
-  // file_type: 'image' | 'pdf' — 'pdf' হলে image_urls-এ একটাই PDF এর URL থাকবে
   if (!image_urls || image_urls.length === 0) {
     return res.status(400).json({ error: 'অন্তত একটি ছবি বা PDF আবশ্যক' });
   }
@@ -53,16 +53,15 @@ router.post('/written-submissions', /* requireAuth, */ async (req, res) => {
        VALUES ($1,$2,$3,$4,'pending') RETURNING *`,
       [student_id, question_id, image_urls, file_type || 'image']
     );
-    // সাবমিট হওয়ার সাথে সাথেই AI মূল্যায়ন শুরু (asynchronously ভালো, এখানে সরল রাখতে সরাসরি await)
-    const evaluation = await evaluateSubmission(submission.rows[0].id);
-    res.json({ submission: submission.rows[0], evaluation });
+    res.json({ submission: submission.rows[0] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'উত্তর জমা দেওয়া যায়নি' });
   }
 });
 
-// ---------- 4. AI Evaluation core function ----------
+// ---------- 4. AI Evaluation function (আপাতত বন্ধ — ANTHROPIC_API_KEY বিলিং একটিভ হলে আনকমেন্ট করে ব্যবহার করবে) ----------
+/*
 async function evaluateSubmission(submissionId) {
   const subRes = await pool.query(
     `SELECT s.*, q.question_text, q.model_answer, q.marks
@@ -72,23 +71,15 @@ async function evaluateSubmission(submissionId) {
   const sub = subRes.rows[0];
   if (!sub) throw new Error('Submission not found');
 
-  // ছবি বা PDF — দুটোকেই base64 এ রূপান্তর করে Claude API-তে পাঠানো হবে
-  // PDF হলে 'document' ব্লক, ছবি হলে 'image' ব্লক — Claude উভয়ই সরাসরি পড়তে পারে
   const fileContents = [];
   for (const url of sub.image_urls) {
     const fileRes = await axios.get(url, { responseType: 'arraybuffer' });
     const base64 = Buffer.from(fileRes.data).toString('base64');
     const mediaType = fileRes.headers['content-type'] || (sub.file_type === 'pdf' ? 'application/pdf' : 'image/jpeg');
     if (sub.file_type === 'pdf' || mediaType === 'application/pdf') {
-      fileContents.push({
-        type: 'document',
-        source: { type: 'base64', media_type: 'application/pdf', data: base64 }
-      });
+      fileContents.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } });
     } else {
-      fileContents.push({
-        type: 'image',
-        source: { type: 'base64', media_type: mediaType, data: base64 }
-      });
+      fileContents.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
     }
   }
 
@@ -109,21 +100,8 @@ async function evaluateSubmission(submissionId) {
 
   const response = await axios.post(
     'https://api.anthropic.com/v1/messages',
-    {
-      model: 'claude-sonnet-5',
-      max_tokens: 2000,
-      messages: [{
-        role: 'user',
-        content: [...fileContents, { type: 'text', text: prompt }]
-      }]
-    },
-    {
-      headers: {
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      }
-    }
+    { model: 'claude-sonnet-5', max_tokens: 2000, messages: [{ role: 'user', content: [...fileContents, { type: 'text', text: prompt }] }] },
+    { headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' } }
   );
 
   let aiText = response.data.content.map(c => c.text || '').join('').trim();
@@ -138,21 +116,20 @@ async function evaluateSubmission(submissionId) {
     [submissionId, aiResult.score, JSON.stringify(aiResult)]
   );
   await pool.query(`UPDATE written_submissions SET status='ai_evaluated' WHERE id=$1`, [submissionId]);
-
   return evalRes.rows[0];
 }
+*/
 
-// ---------- 5. Admin: রিভিউ কিউ (যেগুলো এখনো approve হয়নি) ----------
+// ---------- 5. Admin: রিভিউ কিউ (যেগুলো এখনো নম্বর দেওয়া হয়নি) ----------
 router.get('/admin/written-submissions', /* requireAdmin, */ async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT s.id as submission_id, s.image_urls, s.status, u.name as student_name,
-              q.subject, q.question_text, e.ai_score, e.ai_feedback, e.final_status
+      `SELECT s.id as submission_id, s.image_urls, s.file_type, s.status, u.name as student_name,
+              q.subject, q.question_text, q.marks
        FROM written_submissions s
        JOIN written_questions q ON s.question_id = q.id
        JOIN users u ON s.student_id = u.id
-       LEFT JOIN written_evaluations e ON e.submission_id = s.id
-       WHERE s.status = 'ai_evaluated'
+       WHERE s.status = 'pending'
        ORDER BY s.submitted_at ASC`
     );
     res.json(result.rows);
@@ -162,28 +139,25 @@ router.get('/admin/written-submissions', /* requireAdmin, */ async (req, res) =>
   }
 });
 
-// ---------- 6. Admin: যাচাই/সংশোধন করে Approve ----------
+// ---------- 6. Admin: নম্বর ও মন্তব্য দিয়ে চূড়ান্ত করা ----------
 router.put('/admin/written-submissions/:id/approve', /* requireAdmin, */ async (req, res) => {
   const { id } = req.params;
-  const { admin_score, admin_comment } = req.body; // admin_score না দিলে AI স্কোরই থাকবে
+  const { admin_score, admin_comment } = req.body;
+  if (admin_score === undefined) {
+    return res.status(400).json({ error: 'নম্বর আবশ্যক' });
+  }
   try {
-    if (admin_score !== undefined) {
-      await pool.query(
-        `UPDATE written_evaluations SET admin_score=$1, admin_comment=$2, final_status='approved', approved_at=NOW()
-         WHERE submission_id=$3`,
-        [admin_score, admin_comment || null, id]
-      );
-    } else {
-      await pool.query(
-        `UPDATE written_evaluations SET final_status='approved', approved_at=NOW() WHERE submission_id=$1`,
-        [id]
-      );
-    }
+    await pool.query(
+      `INSERT INTO written_evaluations (submission_id, admin_score, admin_comment, final_status, approved_at)
+       VALUES ($1,$2,$3,'approved',NOW())
+       ON CONFLICT (submission_id) DO UPDATE SET admin_score=$2, admin_comment=$3, final_status='approved', approved_at=NOW()`,
+      [id, admin_score, admin_comment || null]
+    );
     await pool.query(`UPDATE written_submissions SET status='approved' WHERE id=$1`, [id]);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Approve করা যায়নি' });
+    res.status(500).json({ error: 'সংরক্ষণ করা যায়নি' });
   }
 });
 
@@ -208,3 +182,6 @@ router.get('/written-submissions/:id', /* requireAuth, */ async (req, res) => {
 });
 
 module.exports = router;
+
+    
+    
