@@ -1,4 +1,4 @@
-         // ============================================
+       // ============================================
 // Written Exam Routes + AI Evaluation Logic
 // ============================================
 // প্রয়োজনীয় প্যাকেজ: express, pg (বা তোমার existing db pool), axios
@@ -127,7 +127,7 @@ router.get('/admin/written-submissions', /* requireAdmin, */ async (req, res) =>
       `SELECT s.id as submission_id, s.image_urls, s.file_type, s.status, u.name as student_name,
               q.subject, q.question_text, q.marks
        FROM written_submissions s
-       JOIN written_questions q ON s.question_id = q.id
+       LEFT JOIN written_questions q ON s.question_id = q.id
        JOIN users u ON s.student_id = u.id
        WHERE s.status = 'pending'
        ORDER BY s.submitted_at ASC`
@@ -166,10 +166,9 @@ router.get('/written-submissions/:id', /* requireAuth, */ async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT s.*, q.question_text, q.marks, q.subject, e.ai_score, e.ai_feedback,
-              e.admin_score, e.admin_comment, e.final_status
+      `SELECT s.*, q.question_text, q.marks, q.subject, e.admin_score, e.admin_comment, e.final_status
        FROM written_submissions s
-       JOIN written_questions q ON s.question_id = q.id
+       LEFT JOIN written_questions q ON s.question_id = q.id
        LEFT JOIN written_evaluations e ON e.submission_id = s.id
        WHERE s.id = $1`, [id]
     );
@@ -182,3 +181,4 @@ router.get('/written-submissions/:id', /* requireAuth, */ async (req, res) => {
 });
 
 module.exports = router;
+              
