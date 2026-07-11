@@ -17,6 +17,10 @@ app.use('/api', uploadRoutes);
 app.use('/api/mcqs', mcqRoutes);
 const PORT = process.env.PORT || 3000;
 
-initWrittenExamTables().then(() => {
-  app.listen(PORT, () => console.log(`🚀 সার্ভার চলছে পোর্ট ${PORT} এ`));
-});
+initWrittenExamTables()
+  .then(() => initMcqTable())
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 সার্ভার চলছে পোর্ট ${PORT} এ`);
+    });
+  });
