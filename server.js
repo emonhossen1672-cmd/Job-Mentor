@@ -5,7 +5,7 @@ require('dotenv').config();
 const initWrittenExamTables = require('./initWrittenExamDb');
 const writtenExamRoutes = require('./writtenExam.routes');
 const uploadRoutes = require('./upload.routes');
-
+const mcqRoutes = require('./mcq.routes');
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -14,7 +14,7 @@ app.get('/', (req, res) => res.send('উত্তরণ ব্যাকএন্
 
 app.use('/api', writtenExamRoutes);
 app.use('/api', uploadRoutes);
-
+app.use('/api/mcqs', mcqRoutes);
 const PORT = process.env.PORT || 3000;
 
 initWrittenExamTables().then(() => {
