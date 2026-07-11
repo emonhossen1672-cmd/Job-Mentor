@@ -1,4 +1,4 @@
-// ============================================
+         // ============================================
 // Written Exam Routes + AI Evaluation Logic
 // ============================================
 // প্রয়োজনীয় প্যাকেজ: express, pg (বা তোমার existing db pool), axios
@@ -17,7 +17,7 @@ router.post('/admin/written-questions', /* requireAdmin, */ async (req, res) => 
     const result = await pool.query(
       `INSERT INTO written_questions (subject, question_text, marks, model_answer, time_limit_minutes, created_by)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [subject, question_text, marks || 20, model_answer, time_limit_minutes || 30, admin_id]
+      [subject, question_text, marks || 20, model_answer, time_limit_minutes || 30, admin_id || null]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -182,6 +182,3 @@ router.get('/written-submissions/:id', /* requireAuth, */ async (req, res) => {
 });
 
 module.exports = router;
-
-    
-    
