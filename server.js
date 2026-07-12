@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-
+const initTopicsDb = require('./initTopicsDb');
 const initWrittenExamTables = require('./initWrittenExamDb');
 const initMcqTable = require('./initMcqDb');
 const writtenExamRoutes = require('./writtenExam.routes');
@@ -10,7 +10,14 @@ const mcqRoutes = require('./mcq.routes');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+app.get('/setup-topics-db', async (req, res) => {
+  const result = await initTopicsDb();
+  if (result.success) {
+    res.send('✅ Topics tables created successfully!');
+  } else {
+    res.status(500).send('❌ Error: ' + result.error);
+  }
+});
 app.get('/', (req, res) => res.send('উত্তরণ ব্যাকএন্ড চলছে ✅'));
 
 app.use('/api', writtenExamRoutes);
