@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const initTopicsDb = require('./initTopicsDb');
+const bulkUploadRoutes = require('./bulkUpload.routes');
 const { seedTopics } = require('./seedTopics');
 const initWrittenExamTables = require('./initWrittenExamDb');
 const initMcqTable = require('./initMcqDb');
@@ -50,6 +51,8 @@ app.get('/', (req, res) => res.send('উত্তরণ ব্যাকএন্
 app.use('/api', writtenExamRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api/mcqs', mcqRoutes);
+app.use('/', bulkUploadRoutes);
+app.use('/api', bulkUploadRoutes);
 const PORT = process.env.PORT || 3000;
 
 initWrittenExamTables()
