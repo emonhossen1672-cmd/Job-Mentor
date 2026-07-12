@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const initTopicsDb = require('./initTopicsDb');
-const seedTopics = require('./seedTopics');
+const { seedTopics } = require('./seedTopics');
 const initWrittenExamTables = require('./initWrittenExamDb');
 const initMcqTable = require('./initMcqDb');
 const writtenExamRoutes = require('./writtenExam.routes');
@@ -23,6 +23,15 @@ app.get('/seed-topics', async (req, res) => {
   const result = await seedTopics();
   if (result.success) {
     res.send('✅ Topics added successfully!');
+  } else {
+    res.status(500).send('❌ Error: ' + result.error);
+  }
+});
+app.get('/seed-subtopics', async (req, res) => {
+  const { seedSubtopics } = require('./seedTopics');
+  const result = await seedSubtopics();
+  if (result.success) {
+    res.send('✅ Subtopics added successfully!');
   } else {
     res.status(500).send('❌ Error: ' + result.error);
   }
