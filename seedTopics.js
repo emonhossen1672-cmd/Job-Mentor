@@ -39,5 +39,35 @@ async function seedTopics() {
     return { success: false, error: err.message };
   }
 }
+async function seedSubtopics() {
+  const subtopicList = [
+    { topic_id: 1, name: 'প্রাচীন যুগ', order_index: 1 },
+    { topic_id: 1, name: 'মধ্য যুগ', order_index: 2 },
+    { topic_id: 1, name: 'আধুনিক যুগ', order_index: 3 }
+  ];
 
-module.exports = seedTopics;
+  try {
+    for (let i = 0; i < subtopicList.length; i++) {
+      const s = subtopicList[i];
+      const existing = await pool.query(
+        'SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2',
+        [s.topic_id, s.name]
+      );
+
+      if (existing.rows.length === 0) {
+        await pool.query(
+          'INSERT INTO subtopics (topic_id, name, order_index) VALUES ($1, $2, $3)',
+          [s.topic_id, s.name, s.order_index]
+        );
+      }
+    }
+
+    console.log('✅ Subtopics seeded successfully');
+    return { success: true };
+  } catch (err) {
+    console.error('❌ Error seeding subtopics:', err);
+    return { success: false, error: err.message };
+  }
+}
+module.exports = { seedTopics, seedSubtopics };
+
