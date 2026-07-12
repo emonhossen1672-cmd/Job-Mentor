@@ -20,18 +20,18 @@ async function initTopicsDb() {
     `);
 
     await pool.query(`
-      ALTER TABLE questions ADD COLUMN IF NOT EXISTS topic_id INTEGER REFERENCES topics(id);
+      ALTER TABLE mcqs ADD COLUMN IF NOT EXISTS topic_id INTEGER REFERENCES topics(id);
     `);
 
     await pool.query(`
-      ALTER TABLE questions ADD COLUMN IF NOT EXISTS subtopic_id INTEGER REFERENCES subtopics(id);
+      ALTER TABLE mcqs ADD COLUMN IF NOT EXISTS subtopic_id INTEGER REFERENCES subtopics(id);
     `);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_progress (
         id SERIAL PRIMARY KEY,
         student_id INTEGER NOT NULL,
-        question_id INTEGER,
+        mcq_id INTEGER REFERENCES mcqs(id),
         is_read BOOLEAN DEFAULT false,
         is_favorite BOOLEAN DEFAULT false,
         read_at TIMESTAMP DEFAULT NOW()
