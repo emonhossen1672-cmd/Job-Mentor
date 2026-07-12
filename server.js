@@ -27,6 +27,15 @@ app.get('/seed-topics', async (req, res) => {
     res.status(500).send('❌ Error: ' + result.error);
   }
 });
+app.get('/list-topics', async (req, res) => {
+  try {
+    const pool = require('./db');
+    const result = await pool.query('SELECT id, name, order_index FROM topics ORDER BY order_index');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).send('❌ Error: ' + err.message);
+  }
+});
 app.get('/', (req, res) => res.send('উত্তরণ ব্যাকএন্ড চলছে ✅'));
 
 app.use('/api', writtenExamRoutes);
