@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const initExamArchiveDb = require('./initExamArchive');
 const initTopicsDb = require('./initTopicsDb');
 const topicsRoutes = require('./topics.routes');
 const bulkUploadRoutes = require('./bulkUpload.routes');
@@ -13,6 +14,14 @@ const mcqRoutes = require('./mcq.routes');
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.get('/setup-exam-archive-db', async (req, res) => {
+  const result = await initExamArchiveDb();
+  if (result.success) {
+    res.send('✅ Exam archive table created successfully!');
+  } else {
+    res.status(500).send('❌ Error: ' + result.error);
+  }
+});
 app.get('/setup-topics-db', async (req, res) => {
   const result = await initTopicsDb();
   if (result.success) {
