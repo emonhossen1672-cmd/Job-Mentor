@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const examArchiveRoutes = require('./examArchive.routes');
 const initExamArchiveDb = require('./initExamArchive');
 const initTopicsDb = require('./initTopicsDb');
 const topicsRoutes = require('./topics.routes');
@@ -60,6 +61,8 @@ app.get('/', (req, res) => res.send('উত্তরণ ব্যাকএন্
 
 app.use('/api', writtenExamRoutes);
 app.use('/api', uploadRoutes);
+app.use('/', examArchiveRoutes);
+app.use('/api', examArchiveRoutes);
 app.use('/api', topicsRoutes);
 app.use('/api/mcqs', mcqRoutes);
 app.use('/', bulkUploadRoutes);
