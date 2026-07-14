@@ -14,8 +14,8 @@ pool.on('error', (err) => {
   console.error('❌ Unexpected DB error:', err);
 });
 
-// সার্ভার চালু হওয়ার সময় একবার চেক করে category কলাম যোগ করে দেয় (না থাকলে)
-async function ensureCategoryColumn() {
+// সার্ভার চালু হওয়ার সময় একবার চেক করে প্রয়োজনীয় কলাম যোগ করে দেয় (না থাকলে)
+async function ensureColumns() {
   try {
     await pool.query(`
       ALTER TABLE topics ADD COLUMN IF NOT EXISTS category VARCHAR(30) DEFAULT 'bcs'
@@ -23,12 +23,24 @@ async function ensureCategoryColumn() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_topics_category ON topics(category)
     `);
-    console.log('✅ topics.category কলাম নিশ্চিত করা হয়েছে');
+    await pool.query(`
+      ALTER TABLE exam_papers ADD COLUMN IF NOT EXISTS category VARCHAR(30) DEFAULT 'bcs'
+    `);
+    await pool.query(`
+      ALTER TABLE exam_papers ADD COLUMN IF NOT EXISTS exam_type VARCHAR(10) DEFAULT 'preli'
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_exam_papers_category ON exam_papers(category)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_exam_papers_exam_type ON exam_papers(exam_type)
+    `);
+    console.log('✅ সব কলাম নিশ্চিত করা হয়েছে');
   } catch (err) {
-    console.error('❌ category কলাম যোগ করতে সমস্যা:', err.message);
+    console.error('❌ কলাম যোগ করতে সমস্যা:', err.message);
   }
 }
 
-ensureCategoryColumn();
+ensureColumns();
 
 module.exports = pool;
