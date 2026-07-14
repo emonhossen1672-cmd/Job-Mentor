@@ -2,16 +2,23 @@ const express = require('express');
 const pool = require('./db');
 const router = express.Router();
 
-// সব টপিক লিস্ট (প্রতিটার প্রশ্ন সংখ্যা সহ)
+// সব টপিক লিস্ট (প্রতিটার প্রশ্ন সংখ্যা সহ) — এখন category filter সহ
 router.get('/topics', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT t.id, t.name, t.order_index,
+    const { category } = req.query;
+    let query = `
+      SELECT t.id, t.name, t.order_index, t.category,
         (SELECT COUNT(*) FROM mcqs WHERE topic_id = t.id) AS question_count,
         (SELECT COUNT(*) FROM subtopics WHERE topic_id = t.id) AS subtopic_count
       FROM topics t
-      ORDER BY t.order_index
-    `);
+    `;
+    const params = [];
+    if (category) {
+      query += ' WHERE t.category = $1';
+      params.push(category);
+    }
+    query += ' ORDER BY t.order_index';
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -42,6 +49,21 @@ router.get('/subtopics/:subtopicId/mcqs', async (req, res) => {
       [req.params.subtopicId]
     );
     res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ⚠️ সাময়িক migration route — একবার চালানোর পর ফাইল থেকে মুছে ফেলবেন
+router.post('/topics/migrate-category', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.ADMIN_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    await pool.query(`ALTER TABLE topics ADD COLUMN IF NOT EXISTS category VARCHAR(30) DEFAULT 'bcs'`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_topics_category ON topics(category)`);
+    res.json({ success: true, message: 'Migration done' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
