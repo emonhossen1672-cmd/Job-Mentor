@@ -22,7 +22,8 @@ const storage = new CloudinaryStorage({
     return {
       folder: 'uttoron/exam_papers',
       resource_type: isPdf ? 'raw' : 'image',
-      allowed_formats: isPdf ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp']
+      allowed_formats: isPdf ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp'],
+      format: isPdf ? 'pdf' : undefined
     };
   }
 });
