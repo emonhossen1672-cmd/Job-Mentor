@@ -93,10 +93,16 @@ router.delete('/admin/written-questions/:id', checkAdmin, async (req, res) => {
 // ---------- 2. Student: সক্রিয় প্রশ্ন তালিকা ----------
 router.get('/written-questions', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT id, subject, question_text, marks, time_limit_minutes
-       FROM written_questions WHERE is_active = true ORDER BY created_at DESC`
-    );
+    const { subject } = req.query;
+    let query = `SELECT id, subject, question_text, marks, time_limit_minutes
+       FROM written_questions WHERE is_active = true`;
+    const params = [];
+    if (subject) {
+      params.push(subject);
+      query += ` AND subject = $${params.length}`;
+    }
+    query += ' ORDER BY created_at DESC';
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
