@@ -29,23 +29,6 @@ async function ensureCategoryColumn() {
   }
 }
 
-// ⚠️ সাময়িক — সব bcs টপিককে topic_guru তে একবার সরিয়ে দেয়
-async function reassignBcsToTopicGuru() {
-  try {
-    const result = await pool.query(
-      `UPDATE topics SET category = 'topic_guru' WHERE category = 'bcs'`
-    );
-    console.log(`✅ ${result.rowCount}টি টপিক topic_guru তে সরানো হয়েছে`);
-  } catch (err) {
-    console.error('❌ টপিক সরাতে সমস্যা:', err.message);
-  }
-}
-
-async function init() {
-  await ensureCategoryColumn();
-  await reassignBcsToTopicGuru();
-}
-
-init();
+ensureCategoryColumn();
 
 module.exports = pool;
