@@ -16,6 +16,7 @@ const modelTestRoutes = require('./modelTest.routes');
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.get('/setup-exam-archive-db', async (req, res) => {
   const result = await initExamArchiveDb();
   if (result.success) {
