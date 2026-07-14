@@ -1,7 +1,21 @@
 const express = require('express');
 const pool = require('./db');
 const router = express.Router();
-
+// ⚠️ সাময়িক — সব bcs টপিককে topic_guru তে সরানোর জন্য, একবার চালানোর পর মুছে ফেলবেন
+router.post('/topics/reassign-to-topicguru', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.ADMIN_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const result = await pool.query(
+      `UPDATE topics SET category = 'topic_guru' WHERE category = 'bcs'`
+    );
+    res.json({ success: true, updated: result.rowCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // সব টপিক লিস্ট (প্রতিটার প্রশ্ন সংখ্যা সহ) — এখন category filter সহ
 router.get('/topics', async (req, res) => {
   try {
