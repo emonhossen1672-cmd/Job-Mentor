@@ -14,7 +14,7 @@ pool.on('error', (err) => {
   console.error('❌ Unexpected DB error:', err);
 });
 
-// সার্ভার চালু হওয়ার সময় একবার চেক করে প্রয়োজনীয় কলাম যোগ করে দেয় (না থাকলে)
+// সার্ভার চালু হওয়ার সময় একবার চেক করে প্রয়োজনীয় কলাম/টেবিল যোগ করে দেয় (না থাকলে)
 async function ensureColumns() {
   try {
     await pool.query(`
@@ -35,9 +35,36 @@ async function ensureColumns() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_exam_papers_exam_type ON exam_papers(exam_type)
     `);
-    console.log('✅ সব কলাম নিশ্চিত করা হয়েছে');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS model_tests (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        category VARCHAR(30) DEFAULT 'bcs',
+        exam_type VARCHAR(10) DEFAULT 'preli',
+        duration_minutes INTEGER DEFAULT 60,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS model_test_questions (
+        id SERIAL PRIMARY KEY,
+        model_test_id INTEGER REFERENCES model_tests(id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        option_a TEXT NOT NULL,
+        option_b TEXT NOT NULL,
+        option_c TEXT NOT NULL,
+        option_d TEXT NOT NULL,
+        correct_answer VARCHAR(1) NOT NULL,
+        explanation TEXT,
+        order_index INTEGER DEFAULT 0
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_model_test_questions_test_id ON model_test_questions(model_test_id)
+    `);
+    console.log('✅ সব কলাম ও টেবিল নিশ্চিত করা হয়েছে');
   } catch (err) {
-    console.error('❌ কলাম যোগ করতে সমস্যা:', err.message);
+    console.error('❌ কলাম/টেবিল যোগ করতে সমস্যা:', err.message);
   }
 }
 
