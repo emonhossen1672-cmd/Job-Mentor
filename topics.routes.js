@@ -54,19 +54,4 @@ router.get('/subtopics/:subtopicId/mcqs', async (req, res) => {
   }
 });
 
-// ⚠️ সাময়িক migration route — একবার চালানোর পর ফাইল থেকে মুছে ফেলবেন
-router.post('/topics/migrate-category', async (req, res) => {
-  const adminKey = req.headers['x-admin-key'];
-  if (adminKey !== process.env.ADMIN_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  try {
-    await pool.query(`ALTER TABLE topics ADD COLUMN IF NOT EXISTS category VARCHAR(30) DEFAULT 'bcs'`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_topics_category ON topics(category)`);
-    res.json({ success: true, message: 'Migration done' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 module.exports = router;
