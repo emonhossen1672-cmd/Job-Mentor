@@ -152,4 +152,72 @@ router.get('/model-tests/:id/questions', async (req, res) => {
   }
 });
 
+// ---------- MCQ মডেল টেস্টের উত্তর জমা (সার্ভার-সাইড স্কোরিং) ----------
+router.post('/model-tests/:id/submit', async (req, res) => {
+  try {
+    const { student_name, answers } = req.body; // answers: [{question_id, selected}]
+    if (!student_name || !answers) {
+      return res.status(400).json({ error: 'নাম ও উত্তর আবশ্যক' });
+    }
+
+    const questionsResult = await pool.query(
+      'SELECT id, correct_answer FROM model_test_questions WHERE model_test_id = $1',
+      [req.params.id]
+    );
+    const correctMap = {};
+    questionsResult.rows.forEach(q => { correctMap[q.id] = q.correct_answer; });
+
+    let score = 0;
+    for (const a of answers) {
+      if (correctMap[a.question_id] === a.selected) score++;
+    }
+    const total = questionsResult.rows.length;
+
+    await pool.query(
+      `INSERT INTO model_test_submissions (model_test_id, student_name, score, total)
+       VALUES ($1,$2,$3,$4)`,
+      [req.params.id, student_name, score, total]
+    );
+
+    res.json({ success: true, score, total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- একজন শিক্ষার্থীর সব ফলাফল (MCQ + রিটেন একসাথে) ----------
+router.get('/results', async (req, res) => {
+  try {
+    const { student_name } = req.query;
+    if (!student_name) return res.status(400).json({ error: 'student_name আবশ্যক' });
+
+    const mcqResults = await pool.query(
+      `SELECT s.id, s.score, s.total, s.submitted_at, t.title, t.category, 'mcq' as type
+       FROM model_test_submissions s
+       JOIN model_tests t ON s.model_test_id = t.id
+       WHERE s.student_name = $1
+       ORDER BY s.submitted_at DESC`,
+      [student_name]
+    );
+
+    const writtenResults = await pool.query(
+      `SELECT s.id, s.total_score, s.status, s.admin_feedback, s.submitted_at, t.title, t.category, 'written' as type
+       FROM written_model_test_submissions s
+       JOIN written_model_tests t ON s.model_test_id = t.id
+       WHERE s.student_name = $1
+       ORDER BY s.submitted_at DESC`,
+      [student_name]
+    );
+
+    res.json({
+      mcq: mcqResults.rows,
+      written: writtenResults.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
