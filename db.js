@@ -62,6 +62,39 @@ async function ensureColumns() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_model_test_questions_test_id ON model_test_questions(model_test_id)
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS written_model_tests (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        category VARCHAR(30) DEFAULT 'bcs',
+        duration_minutes INTEGER DEFAULT 90,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS written_model_test_questions (
+        id SERIAL PRIMARY KEY,
+        model_test_id INTEGER REFERENCES written_model_tests(id) ON DELETE CASCADE,
+        question_text TEXT NOT NULL,
+        marks INTEGER DEFAULT 10,
+        order_index INTEGER DEFAULT 0
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS written_model_test_submissions (
+        id SERIAL PRIMARY KEY,
+        model_test_id INTEGER REFERENCES written_model_tests(id) ON DELETE CASCADE,
+        student_name VARCHAR(255) NOT NULL,
+        answers JSONB NOT NULL,
+        total_score INTEGER,
+        admin_feedback TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        submitted_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_written_model_test_questions_test_id ON written_model_test_questions(model_test_id)
+    `);
     console.log('✅ সব কলাম ও টেবিল নিশ্চিত করা হয়েছে');
   } catch (err) {
     console.error('❌ কলাম/টেবিল যোগ করতে সমস্যা:', err.message);
