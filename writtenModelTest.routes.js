@@ -182,4 +182,13 @@ router.put('/admin/written-model-test-submissions/:id/score', checkAdmin, async 
   }
 });
 
+// ---------- Admin: একটা নির্দিষ্ট প্রশ্ন ডিলিট (ভুল/জাঙ্ক প্রশ্ন মুছতে) ----------
+router.delete('/admin/written-model-test-questions/:id', checkAdmin, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM written_model_test_questions WHERE id = $1', [req.params.id]);
+    res.send('✅ প্রশ্ন মুছে ফেলা হয়েছে');
+  } catch (err) {
+    res.status(500).send('❌ Error: ' + err.message);
+  }
+});
 module.exports = router;
