@@ -193,4 +193,70 @@ router.delete('/admin/written-model-test-questions/:id', checkAdmin, async (req,
 });
 
 
+// ---------- Admin: রিভিউ পেজ (ব্রাউজার-বান্ধব) ----------
+router.get('/admin/written-model-test-review', async (req, res) => {
+  const key = req.query.key;
+  if (!process.env.ADMIN_KEY || key !== process.env.ADMIN_KEY) {
+    return res.send(`
+      <html><body style="font-family:sans-serif;padding:20px;">
+        <h3>Admin Key দিন</h3>
+        <form method="GET">
+          <input type="password" name="key" placeholder="Admin Key" required style="padding:8px;width:100%;max-width:300px;" />
+          <button type="submit" style="padding:8px 16px;">প্রবেশ করুন</button>
+        </form>
+      </body></html>
+    `);
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT s.id, s.student_name, s.answers, s.status, s.submitted_at, s.total_score, t.title
+       FROM written_model_test_submissions s
+       JOIN written_model_tests t ON s.model_test_id = t.id
+       ORDER BY s.submitted_at DESC`
+    );
+
+    let html = `<html><body style="font-family:sans-serif;padding:20px;max-width:700px;margin:0 auto;">
+      <h2>রিটেন মডেল টেস্ট জমা রিভিউ</h2>`;
+
+    for (const sub of result.rows) {
+      const answers = sub.answers;
+      const files = answers.file_urls || [];
+      html += `
+        <div style="border:1px solid #ddd;border-radius:10px;padding:15px;margin-bottom:15px;">
+          <p><b>${sub.title}</b> — ${sub.student_name}</p>
+          <p style="font-size:12px;color:#666;">জমা: ${new Date(sub.submitted_at).toLocaleString('bn-BD')} | স্ট্যাটাস: ${sub.status}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;">
+            ${files.map(url => `<a href="${url}" target="_blank"><img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;" onerror="this.outerHTML='<div style=\\'width:80px;height:80px;background:#fee;border-radius:6px;display:flex;align-items:center;justify-content:center;\\'>📄 PDF</div>'" /></a>`).join('')}
+          </div>
+          <form action="/api/admin/written-model-test-submissions/${sub.id}/score" method="POST">
+            <input type="hidden" name="adminKey" value="${key}" />
+            <input type="number" name="total_score" placeholder="নম্বর" value="${sub.total_score || ''}" style="padding:6px;width:80px;" />
+            <input type="text" name="admin_feedback" placeholder="মন্তব্য (ঐচ্ছিক)" style="padding:6px;width:200px;" />
+            <button type="submit" style="padding:6px 12px;">সংরক্ষণ করুন</button>
+          </form>
+        </div>`;
+    }
+
+    html += `</body></html>`;
+    res.send(html);
+  } catch (err) {
+    res.status(500).send('❌ Error: ' + err.message);
+  }
+});
+
+// ---------- Admin: ফর্ম থেকে নম্বর সংরক্ষণ ----------
+router.post('/admin/written-model-test-submissions/:id/score', checkAdmin, async (req, res) => {
+  try {
+    const { total_score, admin_feedback } = req.body;
+    await pool.query(
+      `UPDATE written_model_test_submissions SET total_score=$1, admin_feedback=$2, status='reviewed' WHERE id=$3`,
+      [total_score || null, admin_feedback || null, req.params.id]
+    );
+    res.redirect(`/api/admin/written-model-test-review?key=${req.body.adminKey}`);
+  } catch (err) {
+    res.status(500).send('❌ Error: ' + err.message);
+  }
+});
+
 module.exports = router;
