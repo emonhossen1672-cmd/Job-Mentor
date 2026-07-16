@@ -3,10 +3,6 @@
 // ============================================
 // CSV কলাম অর্ডার (হেডার সহ):
 // topic_name,subtopic_name,question,option_a,option_b,option_c,option_d,correct_answer,explanation,difficulty
-//
-// উদাহরণ:
-// topic_name,subtopic_name,question,option_a,option_b,option_c,option_d,correct_answer,explanation,difficulty
-// বাংলা সাহিত্য,প্রাচীন যুগ,চর্যাপদের রচয়িতা কারা?,সিদ্ধাচার্যগণ,মধ্যযুগের কবি,আধুনিক কবি,কেউ নয়,A,চর্যাপদ সিদ্ধাচার্যদের রচনা,Medium
 
 const express = require('express');
 const multer = require('multer');
@@ -15,7 +11,6 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// সাধারণ CSV পার্সার — কমা এবং ডাবল-কোট সাপোর্ট করে
 function parseCSV(text) {
   const rows = [];
   let row = [];
@@ -43,13 +38,14 @@ function parseCSV(text) {
 }
 
 // ---------- আপলোড ফর্ম (ব্রাউজারে দেখা যাবে) ----------
-router.get('/admin/model-test-form', (req, res) => {
+router.get('/admin/bulk-upload-form', (req, res) => {
   const key = String(req.query.key || '').replace(/"/g, '&quot;');
   res.send(`
     <html><body style="font-family:sans-serif;padding:20px;">
-      <h2>মডেল টেস্ট তৈরি করুন</h2>
-      <form action="/api/model-tests/create" method="POST">
+      <h2>MCQ Bulk Upload (CSV)</h2>
+      <form action="/api/bulk-upload-mcqs" method="POST" enctype="multipart/form-data">
         <p>Admin Key: <input type="password" name="adminKey" value="${key}" required /></p>
+        <p>CSV File: <input type="file" name="csvFile" accept=".csv" required /></p>
         <button type="submit">Upload</button>
       </form>
     </body></html>
@@ -74,14 +70,13 @@ router.post('/bulk-upload-mcqs', upload.single('csvFile'), async (req, res) => {
     let inserted = 0;
     let skipped = [];
 
-    for (let i = 0; i < dataRlengthngth; i++) {
+    for (let i = 0; i < dataRows.length; i++) {
       const r = dataRows[i];
       if (r.length < header.length) { skipped.push(i + 2); continue; }
 
       const rowObj = {};
       header.forEach((h, idx) => rowObj[h] = (r[idx] || '').trim());
 
-      // টপিক ID খুঁজে বের করা
       const topicRes = await pool.query('SELECT id FROM topics WHERE name = $1', [rowObj.topic_name]);
       if (topicRes.rows.length === 0) { skipped.push(`${i + 2} (topic not found: ${rowObj.topic_name})`); continue; }
       const topicId = topicRes.rows[0].id;
