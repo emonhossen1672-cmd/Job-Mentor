@@ -47,13 +47,14 @@ function parseRawQuestions(text) {
 }
 
 // ---------- আপলোড ফর্ম ----------
-router.get('/admin/model-test-form', (req, res) => {
+  
+    router.get('/admin/model-test-form', (req, res) => {
+  const key = String(req.query.key || '').replace(/"/g, '&quot;');
   res.send(`
     <html><body style="font-family:sans-serif;padding:20px;">
       <h2>মডেল টেস্ট তৈরি করুন</h2>
       <form action="/api/model-tests/create" method="POST">
-        <p>Admin Key: <input type="password" name="adminKey" required /></p>
-        <p>শিরোনাম: <input type="text" name="title" required placeholder="মডেল টেস্ট ১" style="width:100%" /></p>
+        <p>Admin Key: <input type="password" name="adminKey" value="${key}" required /></p>    <p>শিরোনাম: <input type="text" name="title" required placeholder="মডেল টেস্ট ১" style="width:100%" /></p>
         <p>সেকশন:
           <select name="exam_type" required>
             <option value="preli">প্রিলি</option>
