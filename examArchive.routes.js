@@ -35,11 +35,14 @@ const upload = multer({
 
 // ---------- আপলোড ফর্ম ----------
 router.get('/admin/upload-exam-paper-form', (req, res) => {
+  const key = String(req.query.key || '').replace(/"/g, '&quot;');
   res.send(`
     <html><body style="font-family:sans-serif;padding:20px;">
       <h2>প্রশ্নপত্র আপলোড</h2>
       <form action="/api/exam-papers/upload" method="POST" enctype="multipart/form-data">
-        <p>Admin Key: <input type="password" name="adminKey" required /></p>
+        <p>Admin Key: <input type="password" name="adminKey" value="${key}" required /></p>
+        
+        
         <p>সেকশন:
           <select name="exam_type" required>
             <option value="preli">প্রিলি</option>
