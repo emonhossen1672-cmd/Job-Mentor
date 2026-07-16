@@ -14,6 +14,7 @@ const uploadRoutes = require('./upload.routes');
 const mcqRoutes = require('./mcq.routes');
 const modelTestRoutes = require('./modelTest.routes');
 const writtenModelTestRoutes = require('./writtenModelTest.routes');
+const adminRoutes = require('./admin.routes');
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -72,6 +73,7 @@ app.use('/', bulkUploadRoutes);
 app.use('/api', bulkUploadRoutes);
 app.use('/api', modelTestRoutes);
 app.use('/api', writtenModelTestRoutes);
+app.use('/api', adminRoutes);
 const PORT = process.env.PORT || 3000;
 
 initWrittenExamTables()
