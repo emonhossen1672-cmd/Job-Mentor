@@ -36,14 +36,15 @@ function parseRawEssayQuestions(text) {
   return questions;
 }
 
-// ---------- আপলোড ফর্ম ----------
+// ---------- আপলোড ফর্ম ------------ 
+
 router.get('/admin/written-model-test-form', (req, res) => {
+  const key = String(req.query.key || '').replace(/"/g, '&quot;');
   res.send(`
     <html><body style="font-family:sans-serif;padding:20px;">
       <h2>রিটেন মডেল টেস্ট তৈরি করুন</h2>
       <form action="/api/written-model-tests/create" method="POST">
-        <p>Admin Key: <input type="password" name="adminKey" required /></p>
-        <p>শিরোনাম: <input type="text" name="title" required placeholder="রিটেন মডেল টেস্ট ১" style="width:100%" /></p>
+        <p>Admin Key: <input type="password" name="adminKey" value="${key}" required /></p>         <p>শিরোনাম: <input type="text" name="title" required placeholder="রিটেন মডেল টেস্ট ১" style="width:100%" /></p>
         <p>ক্যাটাগরি:
           <select name="category" required>
             <option value="bcs">বিসিএস</option>
@@ -52,7 +53,7 @@ router.get('/admin/written-model-test-form', (req, res) => {
             <option value="grade_9_20">৯-২০ গ্রেড</option>
           </select>
         </p>
-        <p>সময়সীমা (মিনিট): <input type="number" name="duration_minutes" value="90" required /></p>
+        <p>সময়সীমা (মিনিট): <input type="number" name="duratminutesutes" value="90" required /></p>
         <p>প্রশ্নসমূহ (কাঁচা টেক্সট):<br/>
           <textarea name="rawText" rows="15" style="width:100%" placeholder="১. বাংলাদেশের মুক্তিযুদ্ধের পটভূমি আলোচনা করুন। (মার্ক: ২০)
 
