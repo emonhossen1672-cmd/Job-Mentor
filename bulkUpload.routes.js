@@ -43,13 +43,13 @@ function parseCSV(text) {
 }
 
 // ---------- আপলোড ফর্ম (ব্রাউজারে দেখা যাবে) ----------
-router.get('/admin/bulk-upload-form', (req, res) => {
+router.get('/admin/model-test-form', (req, res) => {
+  const key = String(req.query.key || '').replace(/"/g, '&quot;');
   res.send(`
     <html><body style="font-family:sans-serif;padding:20px;">
-      <h2>MCQ Bulk Upload (CSV)</h2>
-      <form action="/api/bulk-upload-mcqs" method="POST" enctype="multipart/form-data">
-        <p>Admin Key: <input type="password" name="adminKey" required /></p>
-        <p>CSV File: <input type="file" name="csvFile" accept=".csv" required /></p>
+      <h2>মডেল টেস্ট তৈরি করুন</h2>
+      <form action="/api/model-tests/create" method="POST">
+        <p>Admin Key: <input type="password" name="adminKey" value="${key}" required /></p>
         <button type="submit">Upload</button>
       </form>
     </body></html>
@@ -74,7 +74,7 @@ router.post('/bulk-upload-mcqs', upload.single('csvFile'), async (req, res) => {
     let inserted = 0;
     let skipped = [];
 
-    for (let i = 0; i < dataRows.length; i++) {
+    for (let i = 0; i < dataRlengthngth; i++) {
       const r = dataRows[i];
       if (r.length < header.length) { skipped.push(i + 2); continue; }
 
