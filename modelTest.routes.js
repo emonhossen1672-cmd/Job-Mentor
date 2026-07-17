@@ -156,7 +156,7 @@ router.get('/model-tests/:id/questions', async (req, res) => {
 // ---------- MCQ মডেল টেস্টের উত্তর জমা (সার্ভার-সাইড স্কোরিং) ----------
 router.post('/model-tests/:id/submit', async (req, res) => {
   try {
-    const { student_name, answers } = req.body; // answers: [{question_id, selected}]
+    const { student_name, student_phone, answers } = req.body; // answers: [{question_id, selected}]
     if (!student_name || !answers) {
       return res.status(400).json({ error: 'নাম ও উত্তর আবশ্যক' });
     }
@@ -175,9 +175,9 @@ router.post('/model-tests/:id/submit', async (req, res) => {
     const total = questionsResult.rows.length;
 
     await pool.query(
-      `INSERT INTO model_test_submissions (model_test_id, student_name, score, total)
-       VALUES ($1,$2,$3,$4)`,
-      [req.params.id, student_name, score, total]
+      `INSERT INTO model_test_submissions (model_test_id, student_name, student_phone, score, total)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [req.params.id, student_name, student_phone || null, score, total]
     );
 
     res.json({ success: true, score, total });
@@ -220,5 +220,28 @@ router.get('/results', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+router.get('/model-tests/:id/leaderboard', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const result = await pool.query(
+      `WITH best AS (
+         SELECT DISTINCT ON (COALESCE(student_phone, student_name))
+           student_name, student_phone, score, total, submitted_at
+         FROM model_test_submissions
+         WHERE model_test_id = $1
+         ORDER BY COALESCE(student_phone, student_name), score DESC, submitted_at ASC
+       )
+       SELECT student_name, student_phone, score, total, submitted_at,
+         RANK() OVER (ORDER BY score DESC) AS rank
+       FROM best
+       ORDER BY score DESC, submitted_at ASC
+       LIMIT $2`,
+      [req.params.id, limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 module.exports = router;
