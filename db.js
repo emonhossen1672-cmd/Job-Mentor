@@ -110,6 +110,10 @@ async function ensureColumns() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_written_model_test_submissions_student ON written_model_test_submissions(student_name)
     `);
+
+    await pool.query(`
+      ALTER TABLE model_test_submissions ADD COLUMN IF NOT EXISTS student_phone VARCHAR(20)
+    `);
     console.log('✅ সব কলাম ও টেবিল নিশ্চিত করা হয়েছে');
   } catch (err) {
     console.error('❌ কলাম/টেবিল যোগ করতে সমস্যা:', err.message);
