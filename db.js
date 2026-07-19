@@ -113,6 +113,44 @@ async function ensureColumns() {
 
     await pool.query(`
       ALTER TABLE model_test_submissions ADD COLUMN IF NOT EXISTS student_phone VARCHAR(20)
+  
+  `);
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS topic_likes (
+        id SERIAL PRIMARY KEY,
+        user_uid VARCHAR(128) NOT NULL,
+        topic_id INTEGER REFERENCES topics(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_uid, topic_id)
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subtopic_likes (
+        id SERIAL PRIMARY KEY,
+        user_uid VARCHAR(128) NOT NULL,
+        subtopic_id INTEGER REFERENCES subtopics(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_uid, subtopic_id)
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS viewed_questions (
+        id SERIAL PRIMARY KEY,
+        user_uid VARCHAR(128) NOT NULL,
+        mcq_id INTEGER REFERENCES mcqs(id) ON DELETE CASCADE,
+        viewed_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_uid, mcq_id)
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_topic_likes_topic ON topic_likes(topic_id)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_subtopic_likes_subtopic ON subtopic_likes(subtopic_id)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_viewed_questions_user ON viewed_questions(user_uid)
     `);
     console.log('✅ সব কলাম ও টেবিল নিশ্চিত করা হয়েছে');
   } catch (err) {
