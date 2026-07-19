@@ -53,8 +53,29 @@ router.post('/topics/:topicId/like', async (req, res) => {
   }
 });
 
-// একটা টপিকের সব সাবটপিক (লাইক ও প্রগ্রেস সহ)
+// একটা টপিকের সব সাবটপিক (শুধু টপ-লেভেল, parent_id NULL) — লাইক ও প্রগ্রেস সহ
 router.get('/topics/:topicId/subtopics', async (req, res) => {
+  try {
+    const { uid } = req.query;
+    const result = await pool.query(`
+      SELECT s.id, s.name, s.order_index,
+        (SELECT COUNT(*) FROM mcqs WHERE subtopic_id = s.id) AS question_count,
+        (SELECT COUNT(*) FROM subtopics WHERE parent_id = s.id) AS subtopic_count,
+        (SELECT COUNT(*) FROM subtopic_likes WHERE subtopic_id = s.id) AS like_count,
+        ${uid ? `(SELECT COUNT(*) FROM subtopic_likes WHERE subtopic_id = s.id AND user_uid = $2) AS is_liked,` : `0 AS is_liked,`}
+        ${uid ? `(SELECT COUNT(*) FROM viewed_questions vq JOIN mcqs m ON vq.mcq_id = m.id WHERE m.subtopic_id = s.id AND vq.user_uid = $2) AS viewed_count` : `0 AS viewed_count`}
+      FROM subtopics s
+      WHERE s.topic_id = $1 AND s.parent_id IS NULL
+      ORDER BY s.order_index
+    `, uid ? [req.params.topicId, uid] : [req.params.topicId]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// একটা সাবটপিকের ভেতরের সাব-সাবটপিক (৩য় লেভেল) — লাইক ও প্রগ্রেস সহ
+router.get('/subtopics/:subtopicId/subtopics', async (req, res) => {
   try {
     const { uid } = req.query;
     const result = await pool.query(`
@@ -64,9 +85,9 @@ router.get('/topics/:topicId/subtopics', async (req, res) => {
         ${uid ? `(SELECT COUNT(*) FROM subtopic_likes WHERE subtopic_id = s.id AND user_uid = $2) AS is_liked,` : `0 AS is_liked,`}
         ${uid ? `(SELECT COUNT(*) FROM viewed_questions vq JOIN mcqs m ON vq.mcq_id = m.id WHERE m.subtopic_id = s.id AND vq.user_uid = $2) AS viewed_count` : `0 AS viewed_count`}
       FROM subtopics s
-      WHERE s.topic_id = $1
+      WHERE s.parent_id = $1
       ORDER BY s.order_index
-    `, uid ? [req.params.topicId, uid] : [req.params.topicId]);
+    `, uid ? [req.params.subtopicId, uid] : [req.params.subtopicId]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -199,7 +220,5 @@ router.post('/mcqs/mark-viewed-bulk', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-
 
 module.exports = router;
