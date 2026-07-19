@@ -221,4 +221,15 @@ router.post('/mcqs/mark-viewed-bulk', async (req, res) => {
   }
 });
 
+// টেম্পোরারি: নতুন সাব-সাবটপিক সিড করার জন্য (একবার রান করে পরে এই রুট রিমুভ করে দিন)
+router.get('/topics/run-seed-subtopics', async (req, res) => {
+  try {
+    const { seedAllNewSubtopics } = require('./seedTopics');
+    const result = await seedAllNewSubtopics();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
