@@ -15,7 +15,6 @@ function checkAdmin(req, res, next) {
 }
 
 // ---------- কাঁচা টেক্সট পার্সার ----------
-// ফরম্যাট: ১. প্রশ্ন? ক) অপশন ১ খ) অপশন ২ গ) অপশন ৩ ঘ) অপশন ৪ উত্তর: ক
 function parseRawQuestions(text) {
   const bnDigits = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' };
   const toEnDigits = (s) => s.replace(/[০-৯]/g, (d) => bnDigits[d]);
@@ -47,14 +46,14 @@ function parseRawQuestions(text) {
 }
 
 // ---------- আপলোড ফর্ম ----------
-  
-    router.get('/admin/model-test-form', (req, res) => {
+router.get('/admin/model-test-form', (req, res) => {
   const key = String(req.query.key || '').replace(/"/g, '&quot;');
   res.send(`
     <html><body style="font-family:sans-serif;padding:20px;">
       <h2>মডেল টেস্ট তৈরি করুন</h2>
       <form action="/api/model-tests/create" method="POST">
-        <p>Admin Key: <input type="password" name="adminKey" value="${key}" required /></p>    <p>শিরোনাম: <input type="text" name="title" required placeholder="মডেল টেস্ট ১" style="width:100%" /></p>
+        <p>Admin Key: <input type="password" name="adminKey" value="${key}" required /></p>
+        <p>শিরোনাম: <input type="text" name="title" required placeholder="মডেল টেস্ট ১" style="width:100%" /></p>
         <p>সেকশন:
           <select name="exam_type" required>
             <option value="preli">প্রিলি</option>
@@ -70,6 +69,9 @@ function parseRawQuestions(text) {
           </select>
         </p>
         <p>সময়সীমা (মিনিট): <input type="number" name="duration_minutes" value="60" required /></p>
+        <p>শুরুর তারিখ ও সময় (ঐচ্ছিক — খালি রাখলে "লাইভ" সেকশনে দেখাবে না):<br/>
+          <input type="datetime-local" name="scheduled_at" />
+        </p>
         <p>প্রশ্নসমূহ (কাঁচা টেক্সট):<br/>
           <textarea name="rawText" rows="15" style="width:100%" placeholder="১. প্রশ্ন?
 ক) অপশন১ খ) অপশন২ গ) অপশন৩ ঘ) অপশন৪
@@ -87,7 +89,7 @@ function parseRawQuestions(text) {
 // ---------- মডেল টেস্ট তৈরি ও প্রশ্ন পার্স করে সেভ ----------
 router.post('/model-tests/create', checkAdmin, async (req, res) => {
   try {
-    const { title, category, exam_type, duration_minutes, rawText } = req.body;
+    const { title, category, exam_type, duration_minutes, rawText, scheduled_at } = req.body;
     if (!title || !rawText) {
       return res.status(400).send('❌ শিরোনাম ও প্রশ্ন আবশ্যক');
     }
@@ -98,8 +100,8 @@ router.post('/model-tests/create', checkAdmin, async (req, res) => {
     }
 
     const testResult = await pool.query(
-      `INSERT INTO model_tests (title, category, exam_type, duration_minutes) VALUES ($1,$2,$3,$4) RETURNING id`,
-      [title, category || 'bcs', exam_type || 'preli', duration_minutes || 60]
+      `INSERT INTO model_tests (title, category, exam_type, duration_minutes, scheduled_at) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [title, category || 'bcs', exam_type || 'preli', duration_minutes || 60, scheduled_at || null]
     );
     const modelTestId = testResult.rows[0].id;
 
@@ -124,7 +126,7 @@ router.get('/model-tests', async (req, res) => {
   try {
     const { category, exam_type } = req.query;
     let query = `
-      SELECT t.id, t.title, t.category, t.exam_type, t.duration_minutes,
+      SELECT t.id, t.title, t.category, t.exam_type, t.duration_minutes, t.scheduled_at,
         (SELECT COUNT(*) FROM model_test_questions WHERE model_test_id = t.id) AS question_count
       FROM model_tests t WHERE 1=1
     `;
@@ -156,7 +158,7 @@ router.get('/model-tests/:id/questions', async (req, res) => {
 // ---------- MCQ মডেল টেস্টের উত্তর জমা (সার্ভার-সাইড স্কোরিং) ----------
 router.post('/model-tests/:id/submit', async (req, res) => {
   try {
-    const { student_name, student_phone, answers } = req.body; // answers: [{question_id, selected}]
+    const { student_name, student_phone, answers } = req.body;
     if (!student_name || !answers) {
       return res.status(400).json({ error: 'নাম ও উত্তর আবশ্যক' });
     }
@@ -220,6 +222,7 @@ router.get('/results', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 router.get('/model-tests/:id/leaderboard', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
@@ -244,4 +247,54 @@ router.get('/model-tests/:id/leaderboard', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ---------- লাইভ ও আসন্ন পরীক্ষার আপডেট (Home পেজের জন্য) ----------
+router.get('/live-updates', async (req, res) => {
+  try {
+    const preli = await pool.query(`
+      SELECT id, title, category, exam_type, duration_minutes, scheduled_at, 'mcq' AS type
+      FROM model_tests
+      WHERE scheduled_at IS NOT NULL
+        AND scheduled_at + (duration_minutes || ' minutes')::interval > NOW() - interval '2 hours'
+      ORDER BY scheduled_at ASC
+      LIMIT 10
+    `);
+
+    const written = await pool.query(`
+      SELECT id, title, category, 'written' AS exam_type, duration_minutes, scheduled_at, 'written' AS type
+      FROM written_model_tests
+      WHERE scheduled_at IS NOT NULL
+        AND scheduled_at + (duration_minutes || ' minutes')::interval > NOW() - interval '2 hours'
+      ORDER BY scheduled_at ASC
+      LIMIT 10
+    `);
+
+    const all = [...preli.rows, ...written.rows].map(t => {
+      const start = new Date(t.scheduled_at);
+      const end = new Date(start.getTime() + t.duration_minutes * 60000);
+      const now = new Date();
+      let status = 'upcoming';
+      if (now >= start && now <= end) status = 'live';
+      else if (now > end) status = 'ended';
+      return { ...t, status };
+    }).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+
+    res.json(all);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// টেম্পোরারি: scheduled_at কলাম যোগ করার জন্য (একবার রান করে রিমুভ করে দিন)
+router.get('/model-tests/add-schedule-column', async (req, res) => {
+  try {
+    await pool.query(`ALTER TABLE model_tests ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP;`);
+    await pool.query(`ALTER TABLE written_model_tests ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP;`);
+    res.json({ success: true, message: 'scheduled_at কলাম দুই টেবিলেই যোগ হয়েছে' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
