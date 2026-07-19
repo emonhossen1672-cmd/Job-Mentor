@@ -200,4 +200,14 @@ router.post('/mcqs/mark-viewed-bulk', async (req, res) => {
   }
 });
 
+router.get('/topics/run-seed-subtopics', async (req, res) => {
+  try {
+    const { seedSubtopics } = require('./seedTopics');
+    const result = await seedSubtopics();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
