@@ -2,7 +2,6 @@ const express = require('express');
 const pool = require('./db');
 const router = express.Router();
 
-// সব টপিক লিস্ট (প্রশ্ন সংখ্যা, সাবটপিক সংখ্যা, লাইক ও প্রগ্রেস সহ) — category filter সহ
 router.get('/topics', async (req, res) => {
   try {
     const { category, uid } = req.query;
@@ -29,7 +28,6 @@ router.get('/topics', async (req, res) => {
   }
 });
 
-// একটা টপিক লাইক/আনলাইক টগল করা
 router.post('/topics/:topicId/like', async (req, res) => {
   try {
     const { uid } = req.body;
@@ -53,7 +51,6 @@ router.post('/topics/:topicId/like', async (req, res) => {
   }
 });
 
-// একটা টপিকের সব সাবটপিক (শুধু টপ-লেভেল, parent_id NULL) — লাইক ও প্রগ্রেস সহ
 router.get('/topics/:topicId/subtopics', async (req, res) => {
   try {
     const { uid } = req.query;
@@ -74,7 +71,6 @@ router.get('/topics/:topicId/subtopics', async (req, res) => {
   }
 });
 
-// একটা সাবটপিকের ভেতরের সাব-সাবটপিক (৩য় লেভেল) — লাইক ও প্রগ্রেস সহ
 router.get('/subtopics/:subtopicId/subtopics', async (req, res) => {
   try {
     const { uid } = req.query;
@@ -94,7 +90,6 @@ router.get('/subtopics/:subtopicId/subtopics', async (req, res) => {
   }
 });
 
-// একটা সাবটপিক লাইক/আনলাইক টগল করা
 router.post('/subtopics/:subtopicId/like', async (req, res) => {
   try {
     const { uid } = req.body;
@@ -118,7 +113,6 @@ router.post('/subtopics/:subtopicId/like', async (req, res) => {
   }
 });
 
-// একটা টপিকের প্রশ্ন — পেজিনেশন সহ (All Questions বাটন)
 router.get('/topics/:topicId/mcqs', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -139,7 +133,6 @@ router.get('/topics/:topicId/mcqs', async (req, res) => {
   }
 });
 
-// একটা টপিক থেকে র‍্যান্ডম কুইজ (Random Quiz বাটন)
 router.get('/topics/:topicId/random-quiz', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
@@ -153,7 +146,6 @@ router.get('/topics/:topicId/random-quiz', async (req, res) => {
   }
 });
 
-// একটা সাবটপিকের প্রশ্ন — পেজিনেশন সহ
 router.get('/subtopics/:subtopicId/mcqs', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -174,7 +166,6 @@ router.get('/subtopics/:subtopicId/mcqs', async (req, res) => {
   }
 });
 
-// একটা সাবটপিক থেকে র‍্যান্ডম কুইজ
 router.get('/subtopics/:subtopicId/random-quiz', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
@@ -188,7 +179,6 @@ router.get('/subtopics/:subtopicId/random-quiz', async (req, res) => {
   }
 });
 
-// একটা প্রশ্ন "দেখা হয়েছে" হিসেবে চিহ্নিত করা (প্রগ্রেস ট্র্যাকিং)
 router.post('/mcqs/:mcqId/mark-viewed', async (req, res) => {
   try {
     const { uid } = req.body;
@@ -203,7 +193,6 @@ router.post('/mcqs/:mcqId/mark-viewed', async (req, res) => {
   }
 });
 
-// একসাথে অনেকগুলো প্রশ্ন "দেখা হয়েছে" মার্ক করা (Mark all as read বাটন)
 router.post('/mcqs/mark-viewed-bulk', async (req, res) => {
   try {
     const { uid, ids } = req.body;
@@ -216,6 +205,18 @@ router.post('/mcqs/mark-viewed-bulk', async (req, res) => {
       [uid, ...ids]
     );
     res.json({ success: true, marked: ids.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// টেম্পোরারি: parent_id কলাম তৈরি করার জন্য
+router.get('/topics/fix-parent-column', async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE subtopics ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES subtopics(id) ON DELETE CASCADE;
+    `);
+    res.json({ success: true, message: 'parent_id কলাম তৈরি হয়ে গেছে' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
