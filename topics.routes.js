@@ -97,14 +97,22 @@ router.post('/subtopics/:subtopicId/like', async (req, res) => {
   }
 });
 
-// একটা টপিকের সব প্রশ্ন (All Questions বাটন)
+// একটা টপিকের প্রশ্ন — পেজিনেশন সহ (All Questions বাটন)
 router.get('/topics/:topicId/mcqs', async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const pageSize = Math.min(100, parseInt(req.query.pageSize) || 50);
+    const offset = (page - 1) * pageSize;
+
+    const countRes = await pool.query('SELECT COUNT(*) FROM mcqs WHERE topic_id = $1', [req.params.topicId]);
+    const totalCount = parseInt(countRes.rows[0].count);
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
     const result = await pool.query(
-      'SELECT * FROM mcqs WHERE topic_id = $1 ORDER BY id',
-      [req.params.topicId]
+      'SELECT * FROM mcqs WHERE topic_id = $1 ORDER BY id LIMIT $2 OFFSET $3',
+      [req.params.topicId, pageSize, offset]
     );
-    res.json(result.rows);
+    res.json({ data: result.rows, page, pageSize, totalCount, totalPages });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -124,14 +132,22 @@ router.get('/topics/:topicId/random-quiz', async (req, res) => {
   }
 });
 
-// একটা সাবটপিকের সব প্রশ্ন
+// একটা সাবটপিকের প্রশ্ন — পেজিনেশন সহ
 router.get('/subtopics/:subtopicId/mcqs', async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const pageSize = Math.min(100, parseInt(req.query.pageSize) || 50);
+    const offset = (page - 1) * pageSize;
+
+    const countRes = await pool.query('SELECT COUNT(*) FROM mcqs WHERE subtopic_id = $1', [req.params.subtopicId]);
+    const totalCount = parseInt(countRes.rows[0].count);
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
     const result = await pool.query(
-      'SELECT * FROM mcqs WHERE subtopic_id = $1 ORDER BY id',
-      [req.params.subtopicId]
+      'SELECT * FROM mcqs WHERE subtopic_id = $1 ORDER BY id LIMIT $2 OFFSET $3',
+      [req.params.subtopicId, pageSize, offset]
     );
-    res.json(result.rows);
+    res.json({ data: result.rows, page, pageSize, totalCount, totalPages });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -161,6 +177,24 @@ router.post('/mcqs/:mcqId/mark-viewed', async (req, res) => {
       [uid, req.params.mcqId]
     );
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// একসাথে অনেকগুলো প্রশ্ন "দেখা হয়েছে" মার্ক করা (Mark all as read বাটন)
+router.post('/mcqs/mark-viewed-bulk', async (req, res) => {
+  try {
+    const { uid, ids } = req.body;
+    if (!uid || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'uid ও ids প্রয়োজন' });
+    }
+    const values = ids.map((_, i) => `($1, $${i + 2})`).join(',');
+    await pool.query(
+      `INSERT INTO viewed_questions (user_uid, mcq_id) VALUES ${values} ON CONFLICT (user_uid, mcq_id) DO NOTHING`,
+      [uid, ...ids]
+    );
+    res.json({ success: true, marked: ids.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
