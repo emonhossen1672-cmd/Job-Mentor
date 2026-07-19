@@ -27,6 +27,10 @@ async function initTopicsDb() {
       ALTER TABLE mcqs ADD COLUMN IF NOT EXISTS subtopic_id INTEGER REFERENCES subtopics(id);
     `);
 
+await pool.query(`
+  ALTER TABLE subtopics ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES subtopics(id) ON DELETE CASCADE;
+`);
+    
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_progress (
         id SERIAL PRIMARY KEY,
