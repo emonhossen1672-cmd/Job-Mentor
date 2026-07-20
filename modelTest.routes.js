@@ -171,18 +171,75 @@ router.post('/model-tests/:id/submit', async (req, res) => {
     questionsResult.rows.forEach(q => { correctMap[q.id] = q.correct_answer; });
 
     let score = 0;
+    const wrongIds = [];
+    const answersObj = {};
     for (const a of answers) {
-      if (correctMap[a.question_id] === a.selected) score++;
+      answersObj[a.question_id] = a.selected;
+      if (correctMap[a.question_id] === a.selected) {
+        score++;
+      } else {
+        wrongIds.push(a.question_id);
+      }
     }
     const total = questionsResult.rows.length;
 
-    await pool.query(
-      `INSERT INTO model_test_submissions (model_test_id, student_name, student_phone, score, total)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [req.params.id, student_name, student_phone || null, score, total]
+    const insertResult = await pool.query(
+      `INSERT INTO model_test_submissions (model_test_id, student_name, student_phone, score, total, answers, wrong_ids)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [req.params.id, student_name, student_phone || null, score, total, JSON.stringify(answersObj), wrongIds]
     );
 
-    res.json({ success: true, score, total });
+    res.json({ success: true, score, total, submission_id: insertResult.rows[0].id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- একটা সাবমিশনের বিস্তারিত রেজাল্ট (কোন প্রশ্নে ভুল, সঠিক উত্তর কী ছিল) ----------
+router.get('/model-tests/submission/:submissionId/result', async (req, res) => {
+  try {
+    const subResult = await pool.query(
+      `SELECT id, model_test_id, student_name, student_phone, score, total, answers, wrong_ids, submitted_at
+       FROM model_test_submissions WHERE id = $1`,
+      [req.params.submissionId]
+    );
+    if (subResult.rows.length === 0) {
+      return res.status(404).json({ error: 'সাবমিশন পাওয়া যায়নি' });
+    }
+    const submission = subResult.rows[0];
+
+    const questionsResult = await pool.query(
+      `SELECT id, question, option_a, option_b, option_c, option_d, correct_answer, explanation
+       FROM model_test_questions WHERE model_test_id = $1 ORDER BY order_index`,
+      [submission.model_test_id]
+    );
+
+    const wrongIdSet = new Set(submission.wrong_ids || []);
+    const answers = submission.answers || {};
+
+    const wrongQuestions = questionsResult.rows
+      .filter(q => wrongIdSet.has(q.id))
+      .map(q => ({
+        id: q.id,
+        question: q.question,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        correct_answer: q.correct_answer,
+        your_answer: answers[q.id] || null,
+        explanation: q.explanation
+      }));
+
+    res.json({
+      student_name: submission.student_name,
+      score: submission.score,
+      total: submission.total,
+      submitted_at: submission.submitted_at,
+      wrong_count: wrongQuestions.length,
+      wrong_questions: wrongQuestions
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
