@@ -1,4 +1,4 @@
-        const pool = require('./db');
+const pool = require('./db');
 
 const topicList = [
   'বাংলা সাহিত্য',
@@ -19,9 +19,15 @@ const topicList = [
 async function seedTopics() {
   try {
     for (let i = 0; i < topicList.length; i++) {
-      const existing = await pool.query('SELECT id FROM topics WHERE name = $1', [topicList[i]]);
+      const existing = await pool.query(
+        'SELECT id FROM topics WHERE name = $1',
+        [topicList[i]]
+      );
       if (existing.rows.length === 0) {
-        await pool.query('INSERT INTO topics (name, order_index) VALUES ($1, $2)', [topicList[i], i + 1]);
+        await pool.query(
+          'INSERT INTO topics (name, order_index) VALUES ($1, $2)',
+          [topicList[i], i + 1]
+        );
       }
     }
     console.log('✅ Topics seeded successfully');
@@ -78,9 +84,15 @@ async function seedSubtopics() {
   try {
     for (let i = 0; i < subtopicList.length; i++) {
       const s = subtopicList[i];
-      const existing = await pool.query('SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2', [s.topic_id, s.name]);
+      const existing = await pool.query(
+        'SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2',
+        [s.topic_id, s.name]
+      );
       if (existing.rows.length === 0) {
-        await pool.query('INSERT INTO subtopics (topic_id, name, order_index) VALUES ($1, $2, $3)', [s.topic_id, s.name, s.order_index]);
+        await pool.query(
+          'INSERT INTO subtopics (topic_id, name, order_index) VALUES ($1, $2, $3)',
+          [s.topic_id, s.name, s.order_index]
+        );
       }
     }
     console.log('✅ Subtopics seeded successfully');
@@ -93,30 +105,60 @@ async function seedSubtopics() {
 
 async function seedSubSubtopics() {
   const data = [
-    { topicName: 'বাংলা সাহিত্য', subtopicName: 'প্রাচীন যুগ', children: ['চর্যাপদ', 'চর্যাপদের কবিগণ'] },
-    { topicName: 'বাংলা সাহিত্য', subtopicName: 'মধ্য যুগ', children: ['মঙ্গলকাব্য', 'বৈষ্ণব পদাবলি', 'লোকসাহিত্য', 'মর্সিয়া সাহিত্য', 'গীতিকা', 'মধ্যযুগের গুরুত্বপূর্ণ লেখকগণ'] },
-    { topicName: 'বাংলা সাহিত্য', subtopicName: 'আধুনিক যুগ', children: ['ওরা ১১জন', 'কল্লোল যুগ ও পঞ্চপাণ্ডব', 'গদ্য সাহিত্যের বিকাশ (গল্প, উপন্যাস, নাটক)', 'শরৎচন্দ্র চট্টোপাধ্যায়', 'প্রমথ চৌধুরী', 'মানিক বন্দ্যোপাধ্যায়', 'জহির রায়হান', 'শামসুর রহমান', 'হুমায়ুন আহমেদ ও হুমায়ুন আজাদ', 'বাংলা সাহিত্যের গুরুত্বপূর্ণ নারী লেখক', 'পশ্চিমবঙ্গের গুরুত্বপূর্ণ লেখক', 'সাহিত্যিক ছদ্মনাম, উপাধি এবং পত্রিকা', 'ভাষা আন্দোলন ও মুক্তিযুদ্ধভিত্তিক সাহিত্য', 'বাংলা সাহিত্যের চরিত্র, উক্তি, সংলাপ', 'আধুনিক যুগের অন্যান্য গুরুত্বপূর্ণ লেখক'] },
+    {
+      topicName: 'বাংলা সাহিত্য',
+      subtopicName: 'প্রাচীন যুগ',
+      children: ['চর্যাপদ', 'চর্যাপদের কবিগণ'],
+    },
+    {
+      topicName: 'বাংলা সাহিত্য',
+      subtopicName: 'মধ্য যুগ',
+      children: ['মঙ্গলকাব্য', 'বৈষ্ণব পদাবলি', 'লোকসাহিত্য', 'মর্সিয়া সাহিত্য', 'গীতিকা', 'মধ্যযুগের গুরুত্বপূর্ণ লেখকগণ'],
+    },
+    {
+      topicName: 'বাংলা সাহিত্য',
+      subtopicName: 'আধুনিক যুগ',
+      children: [
+        'ওরা ১১জন', 'কল্লোল যুগ ও পঞ্চপাণ্ডব', 'গদ্য সাহিত্যের বিকাশ (গল্প, উপন্যাস, নাটক)',
+        'শরৎচন্দ্র চট্টোপাধ্যায়', 'প্রমথ চৌধুরী', 'মানিক বন্দ্যোপাধ্যায়', 'জহির রায়হান',
+        'শামসুর রহমান', 'হুমায়ুন আহমেদ ও হুমায়ুন আজাদ', 'বাংলা সাহিত্যের গুরুত্বপূর্ণ নারী লেখক',
+        'পশ্চিমবঙ্গের গুরুত্বপূর্ণ লেখক', 'সাহিত্যিক ছদ্মনাম, উপাধি এবং পত্রিকা',
+        'ভাষা আন্দোলন ও মুক্তিযুদ্ধভিত্তিক সাহিত্য', 'বাংলা সাহিত্যের চরিত্র, উক্তি, সংলাপ',
+        'আধুনিক যুগের অন্যান্য গুরুত্বপূর্ণ লেখক',
+      ],
+    },
   ];
+
   try {
     for (const group of data) {
       const topicRes = await pool.query('SELECT id FROM topics WHERE name = $1', [group.topicName]);
       if (topicRes.rows.length === 0) continue;
       const topicId = topicRes.rows[0].id;
-      const subRes = await pool.query('SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2 AND parent_id IS NULL', [topicId, group.subtopicName]);
+      const subRes = await pool.query(
+        'SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2 AND parent_id IS NULL',
+        [topicId, group.subtopicName]
+      );
       if (subRes.rows.length === 0) continue;
       const parentId = subRes.rows[0].id;
+
       for (let i = 0; i < group.children.length; i++) {
         const childName = group.children[i];
-        const existing = await pool.query('SELECT id FROM subtopics WHERE parent_id = $1 AND name = $2', [parentId, childName]);
+        const existing = await pool.query(
+          'SELECT id FROM subtopics WHERE parent_id = $1 AND name = $2',
+          [parentId, childName]
+        );
         if (existing.rows.length === 0) {
-          await pool.query('INSERT INTO subtopics (topic_id, parent_id, name, order_index) VALUES ($1,$2,$3,$4)', [topicId, parentId, childName, i + 1]);
+          await pool.query(
+            'INSERT INTO subtopics (topic_id, parent_id, name, order_index) VALUES ($1, $2, $3, $4)',
+            [topicId, parentId, childName, i + 1]
+          );
         }
       }
     }
-    console.log('✅ বাংলা সাহিত্য সাব-সাবটপিক seeded');
+    console.log('✅ বাংলা সাহিত্য সাব-সাবটপিক seeded successfully');
     return { success: true };
   } catch (err) {
-    console.error('❌ Error:', err);
+    console.error('❌ Error seeding sub-subtopics:', err);
     return { success: false, error: err.message };
   }
 }
@@ -124,6 +166,7 @@ async function seedSubSubtopics() {
 async function seedBanglaGrammarSubtopics() {
   const topicName = 'বাংলা ভাষা ও ব্যাকরণ';
   const oldSubtopicNames = ['ব্যাকরণিক বিষয়', 'বাগধারা ও প্রবাদ', 'ভাষাতত্ত্ব'];
+
   const newStructure = [
     { name: 'বাংলা ভাষা ও ব্যাকরণ', children: ['ভাষা ও বাংলা ভাষারীতি', 'বাংলা ব্যাকরণ ও এর আলোচ্য বিষয়'] },
     { name: 'ধ্বনিতত্ত্ব', children: ['ধ্বনি ও বর্ণ প্রকরণ', 'ধ্বনি পরিবর্তন', 'ণ-ত্ব ও ষ-ত্ব বিধান', 'সন্ধি'] },
@@ -132,63 +175,75 @@ async function seedBanglaGrammarSubtopics() {
     { name: 'বাক্য প্রকরণ', children: ['বাক্য ও বাক্যের প্রকারভেদ', 'বাক্য ও উক্তির পরিবর্তন', 'কারক ও বিভক্তি', 'বাচ্য ও বাচ্যের পরিবর্তন', 'যতিচিহ্ন', 'প্রয়োগ ও অপপ্রয়োগ', 'বানান ও বাক্য শুদ্ধি', 'ছন্দ ও অলংকার', 'বাক্য সম্পর্কিত বিবিধ'] },
     { name: 'অর্থতত্ত্ব', children: ['বাগধারা ও প্রবাদ প্রবচন', 'সমার্থক শব্দ', 'বিপরীতার্থক শব্দ', 'শব্দজোড়', 'এক কথায় প্রকাশ', 'পরিভাষা'] },
   ];
-  return replaceSubtopics(topicName, oldSubtopicNames, newStructure);
-}
 
-// ---------- জেনেরিক ফাংশন: পুরনো সাবটপিক মুছে/রেখে নতুন সাবটপিক ও সাব-সাবটপিক বসানো ----------
-async function replaceSubtopics(topicName, oldNames, newStructure) {
   try {
     const topicRes = await pool.query('SELECT id FROM topics WHERE name = $1', [topicName]);
-    if (topicRes.rows.length === 0) return { success: false, error: `টপিক পাওয়া যায়নি: ${topicName}` };
+    if (topicRes.rows.length === 0) return { success: false, error: 'টপিক পাওয়া যায়নি' };
     const topicId = topicRes.rows[0].id;
 
-    if (oldNames && oldNames.length > 0) {
-      const oldRes = await pool.query(
-        'SELECT id FROM subtopics WHERE topic_id = $1 AND name = ANY($2) AND parent_id IS NULL',
-        [topicId, oldNames]
-      );
-      for (const row of oldRes.rows) {
-        await pool.query('UPDATE mcqs SET subtopic_id = NULL WHERE subtopic_id = $1', [row.id]);
-        await pool.query('DELETE FROM subtopics WHERE id = $1', [row.id]);
-      }
+    const oldRes = await pool.query(
+      'SELECT id FROM subtopics WHERE topic_id = $1 AND name = ANY($2) AND parent_id IS NULL',
+      [topicId, oldSubtopicNames]
+    );
+    for (const row of oldRes.rows) {
+      await pool.query('UPDATE mcqs SET subtopic_id = NULL WHERE subtopic_id = $1', [row.id]);
+      await pool.query('DELETE FROM subtopics WHERE id = $1', [row.id]);
     }
 
     for (let i = 0; i < newStructure.length; i++) {
       const group = newStructure[i];
-      let subRes = await pool.query('SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2 AND parent_id IS NULL', [topicId, group.name]);
+      let subRes = await pool.query(
+        'SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2 AND parent_id IS NULL',
+        [topicId, group.name]
+      );
       let parentId;
       if (subRes.rows.length === 0) {
-        const insertRes = await pool.query('INSERT INTO subtopics (topic_id, name, order_index) VALUES ($1,$2,$3) RETURNING id', [topicId, group.name, i + 1]);
+        const insertRes = await pool.query(
+          'INSERT INTO subtopics (topic_id, name, order_index) VALUES ($1, $2, $3) RETURNING id',
+          [topicId, group.name, i + 1]
+        );
         parentId = insertRes.rows[0].id;
       } else {
         parentId = subRes.rows[0].id;
       }
-      if (group.children && group.children.length > 0) {
-        for (let j = 0; j < group.children.length; j++) {
-          const childName = group.children[j];
-          const existing = await pool.query('SELECT id FROM subtopics WHERE parent_id = $1 AND name = $2', [parentId, childName]);
-          if (existing.rows.length === 0) {
-            await pool.query('INSERT INTO subtopics (topic_id, parent_id, name, order_index) VALUES ($1,$2,$3,$4)', [topicId, parentId, childName, j + 1]);
-          }
+
+      for (let j = 0; j < group.children.length; j++) {
+        const childName = group.children[j];
+        const existing = await pool.query(
+          'SELECT id FROM subtopics WHERE parent_id = $1 AND name = $2',
+          [parentId, childName]
+        );
+        if (existing.rows.length === 0) {
+          await pool.query(
+            'INSERT INTO subtopics (topic_id, parent_id, name, order_index) VALUES ($1, $2, $3, $4)',
+            [topicId, parentId, childName, j + 1]
+          );
         }
       }
     }
+
+    console.log('✅ বাংলা ভাষা ও ব্যাকরণ সাবটপিক আপডেট সম্পন্ন');
     return { success: true };
   } catch (err) {
-    console.error(`❌ Error replacing subtopics for ${topicName}:`, err);
+    console.error('❌ Error:', err);
     return { success: false, error: err.message };
   }
 }
 
-// ---------- ব্যাচ ২: ইংরেজি গ্রামার, গণিত, মানসিক দক্ষতা, বাংলাদেশ, ভূগোল ও পরিবেশ, নৈতিকতা ও সুশাসন, কম্পিউটার ও তথ্যপ্রযুক্তি ----------
-async function seedBatch2Subtopics() {
-  const topicsData = [
+async function seedAllNewSubtopics() {
+  const r1 = await seedSubSubtopics();
+  const r2 = await seedBanglaGrammarSubtopics();
+  return { banglaSahitya: r1, banglaGrammar: r2 };
+}
+
+async function seedRemainingSubtopics() {
+  const data = [
     {
       topicName: 'ইংরেজি গ্রামার',
-      oldNames: ['Tense ও Voice', 'Parts of Speech', 'Sentence Structure'],
-      newStructure: [
+      oldSubtopicNames: ['Tense ও Voice', 'Parts of Speech', 'Sentence Structure'],
+      subtopics: [
         { name: 'Parts of Speech', children: ['Noun', 'Pronoun', 'Verb', 'Adjective and Adverb', 'Preposition, Conjunction, Interjection', 'Usage of Various Parts of Speech', 'Interchange of Parts of Speech'] },
-        { name: 'Idioms and Phrases', children: ['Idioms and Phrases', 'Classification of Phrase', 'Proverbs'] },
+        { name: 'Idioms and Phrase', children: ['Idioms and Phrases', 'Classification of Phrase', 'Proverbs'] },
         { name: 'Tense', children: [] },
         { name: 'Clause', children: ['Principal Clause', 'Noun Clause', 'Adjective Clause', 'Verbal and Adverbial Clause'] },
         { name: 'Voice, Narration, Degree', children: [] },
@@ -199,30 +254,42 @@ async function seedBatch2Subtopics() {
     },
     {
       topicName: 'গণিত',
-      oldNames: [],
-      newStructure: [
-        { name: 'পাটিগণিত', children: ['বাস্তব সংখ্যা, গড়, ভগ্নাংশ, লসাগু ও গসাগু', 'শতকরা, সরল ও যৌগিক মুনাফা, লাভ-ক্ষতি', 'অংশীদারী হিসাব, অনুপাত ও সমানুপাত', 'বয়স ও পরিমাপ সংক্রান্ত', 'নৌকা, ট্রেন, সময় ও গতিবেগ', 'কাজ, নল ও চৌবাচ্চা'] },
+      oldSubtopicNames: [],
+      subtopics: [
+        { name: 'পাটিগণিত', children: ['বাস্তব সংখ্যা, গড়, ভগ্নাংশ, লসাগু ও গসাগু', 'শতকরা, সরল ও যৌগিক মুনাফা, লাভ ক্ষতি', 'অংশীদারী হিসাব, অনুপাত ও সমানুপাত', 'বয়স ও পরিমাপ সংক্রান্ত', 'নৌকা, ট্রেন, সময় ও গতিবেগ', 'কাজ, নল ও চৌবাচ্চা'] },
         { name: 'বীজগণিত', children: ['বীজগাণিতিক সূত্রাবলী ও প্রয়োগ', 'বহুপদী উৎপাদক', 'সরল দ্বিপদী সমীকরণ এবং সরল সহসমীকরণ', 'সরল ও দ্বিপদী অসমতা', 'সূচক ও লগারিদম', 'ধারা', 'সেট, ফাংশন ও ভেনচিত্র', 'বিন্যাস ও সমাবেশ', 'পরিসংখ্যান ও সম্ভাব্যতা'] },
         { name: 'জ্যামিতি', children: ['রেখা, কোণ, বৃত্ত', 'ত্রিভুজ সংক্রান্ত সমস্যা', 'চতুর্ভুজ সংক্রান্ত', 'পীথাগোরাসের উপপাদ্য ও বহুভুজ', 'ত্রিকোণমিতি', 'পরিমিতি'] },
       ],
     },
     {
-      topicName: 'মানসিক দক্ষতা',
-      oldNames: ['সংখ্যা ধারা', 'যুক্তি বিশ্লেষণ', 'দিক নির্ণয়'],
-      newStructure: [
-        { name: 'ভাষাগত ও যৌক্তিক বিচার', children: [] },
-        { name: 'সমস্যা সমাধান', children: [] },
-        { name: 'বানান ও ভাষা', children: [] },
-        { name: 'যান্ত্রিক দক্ষতা', children: [] },
-        { name: 'স্থানাঙ্ক সম্পর্ক', children: [] },
-        { name: 'সংখ্যাগত ক্ষমতা', children: [] },
-        { name: 'বিমূর্ত যুক্তি', children: [] },
+      topicName: 'নৈতিকতা ও সুশাসন',
+      oldSubtopicNames: ['সুশাসনের উপাদান', 'দুর্নীতি প্রতিরোধ', 'নৈতিক মূল্যবোধ'],
+      subtopics: [
+        { name: 'নৈতিকতা', children: [] },
+        { name: 'মূল্যবোধ', children: [] },
+        { name: 'সুশাসন', children: [] },
+        { name: 'নৈতিকতা, মূল্যবোধ, সুশাসন সম্পর্কিত বই ও লেখক', children: [] },
+        { name: 'বিবিধ', children: [] },
+      ],
+    },
+    {
+      topicName: 'ভূগোল ও পরিবেশ',
+      oldSubtopicNames: ['বাংলাদেশের ভূগোল', 'বিশ্ব ভূগোল', 'পরিবেশ ও জলবায়ু'],
+      subtopics: [
+        { name: 'বাংলাদেশ ও বৈশ্বিক ভৌগোলিক অঞ্চল, সীমানা, আর্থসামাজিক', children: [] },
+        { name: 'অঞ্চলভিত্তিক ভৌত পরিবেশ ও সম্পদের বণ্টন এবং গুরুত্ব', children: [] },
+        { name: 'বাংলাদেশ ও বৈশ্বিক পরিবেশ: প্রকৃতি ও সম্পদ বণ্টনের প্রধান চ্যালেঞ্জ', children: [] },
+        { name: 'আবহাওয়া ও জলবায়ুর নিয়ামকসমূহ', children: [] },
+        { name: 'প্রাকৃতিক দুর্যোগ ও ব্যবস্থাপনা', children: [] },
+        { name: 'বৃহত্তম, ক্ষুদ্রতম, উচ্চতম, গভীরতম, প্রশস্ততম', children: [] },
+        { name: 'নদী, হ্রদ, মহাসাগর, সাগর', children: [] },
+        { name: 'প্রণালী, সীমারেখা ও অন্যান্য ভৌগোলিক বিষয়', children: [] },
       ],
     },
     {
       topicName: 'বাংলাদেশ',
-      oldNames: ['ইতিহাস ও মুক্তিযুদ্ধ', 'সংবিধান ও রাজনীতি', 'ভূগোল ও অর্থনীতি'],
-      newStructure: [
+      oldSubtopicNames: ['ইতিহাস ও মুক্তিযুদ্ধ', 'সংবিধান ও রাজনীতি', 'ভূগোল ও অর্থনীতি'],
+      subtopics: [
         { name: 'বাংলাদেশের জাতীয় বিষয়াবলী', children: [] },
         { name: 'কৃষিজ সম্পদ', children: [] },
         { name: 'বাংলাদেশের অর্থনীতি', children: [] },
@@ -237,51 +304,83 @@ async function seedBatch2Subtopics() {
       ],
     },
     {
-      topicName: 'ভূগোল ও পরিবেশ',
-      oldNames: ['বাংলাদেশের ভূগোল', 'বিশ্ব ভূগোল', 'পরিবেশ ও জলবায়ু'],
-      newStructure: [
-        { name: 'বাংলাদেশ ও বৈশ্বিক ভৌগোলিক অঞ্চল, সীমানা, আর্থসামাজিক', children: [] },
-        { name: 'অঞ্চলভিত্তিক ভৌত পরিবেশ, সম্পদের বন্টন ও গুরুত্ব', children: [] },
-        { name: 'বাংলাদেশ ও বৈশ্বিক পরিবেশ: প্রকৃতি ও সম্পদ বন্টনের প্রধান চ্যালেঞ্জ', children: [] },
-        { name: 'আবহাওয়া ও জলবায়ুর নিয়ামকসমূহ', children: [] },
-        { name: 'প্রাকৃতিক দুর্যোগ ও ব্যবস্থাপনা', children: [] },
-        { name: 'বৃহত্তম, ক্ষুদ্রতম, উচ্চতম, গভীরতম, প্রশস্ততম', children: [] },
-        { name: 'নদী, হ্রদ, মহাসাগর, সাগর', children: [] },
-        { name: 'প্রণালী, সীমারেখা ও অন্যান্য ভৌগোলিক বিষয়', children: [] },
-      ],
-    },
-    {
-      topicName: 'নৈতিকতা ও সুশাসন',
-      oldNames: ['সুশাসনের উপাদান', 'দুর্নীতি প্রতিরোধ', 'নৈতিক মূল্যবোধ'],
-      newStructure: [
-        { name: 'নৈতিকতা', children: [] },
-        { name: 'মূল্যবোধ', children: [] },
-        { name: 'সুশাসন', children: [] },
-        { name: 'নৈতিকতা, মূল্যবোধ, সুশাসন সম্পর্কিত বই ও লেখক', children: [] },
-        { name: 'বিবিধ', children: [] },
+      topicName: 'মানসিক দক্ষতা',
+      oldSubtopicNames: ['সংখ্যা ধারা', 'যুক্তি বিশ্লেষণ', 'দিক নির্ণয়'],
+      subtopics: [
+        { name: 'ভাষাগত ও যৌক্তিক বিচার', children: [] },
+        { name: 'সমস্যা সমাধান', children: [] },
+        { name: 'বানান ও ভাষা', children: [] },
+        { name: 'যান্ত্রিক দক্ষতা', children: [] },
+        { name: 'স্থানাঙ্ক সম্পর্ক', children: [] },
+        { name: 'সংখ্যাগত ক্ষমতা', children: [] },
+        { name: 'বিমূর্ত যুক্তি', children: [] },
       ],
     },
     {
       topicName: 'কম্পিউটার ও তথ্যপ্রযুক্তি',
-      oldNames: ['হার্ডওয়্যার ও সফটওয়্যার', 'ইন্টারনেট ও নেটওয়ার্ক', 'প্রোগ্রামিং ধারণা'],
-      newStructure: [
+      oldSubtopicNames: ['হার্ডওয়্যার ও সফটওয়্যার', 'ইন্টারনেট ও নেটওয়ার্ক', 'প্রোগ্রামিং ধারণা'],
+      subtopics: [
         { name: 'কম্পিউটার', children: ['কম্পিউটারের অঙ্গ সংগঠন ও পেরিফেরালস', 'কম্পিউটার প্রোগ্রাম ও প্রোগ্রামিং ল্যাঙ্গুয়েজ', 'দৈনন্দিন জীবনে কম্পিউটার', 'কম্পিউটার অপারেটিং সিস্টেম', 'কম্পিউটারের ইতিহাস', 'কম্পিউটারের প্রকারভেদ', 'কম্পিউটার নম্বর সিস্টেম ও লজিক গেট', 'ডাটাবেজ সিস্টেম', 'কম্পিউটারে শর্টকাট কমান্ড', 'বিবিধ বিষয়'] },
-        { name: 'তথ্য প্রযুক্তি', children: ['ইন্টারনেট সংক্রান্ত', 'কম্পিউটার ও সেলুলার নেটওয়ার্কিং সিস্টেম ও ডাটা কমিউনিকেশন', 'দৈনন্দিন জীবনে তথ্য প্রযুক্তি', 'ক্লায়েন্ট সার্ভার ও ক্লাউড কম্পিউটিং', 'মোবাইল প্রযুক্তি ও এর বৈশিষ্ট্য', 'সোশ্যাল নেটওয়ার্কিং ও তথ্য প্রযুক্তির বড় প্রতিষ্ঠান', 'রোবোটিক্স ও সাইবার অপরাধ', 'তথ্য প্রযুক্তি সংক্রান্ত বিবিধ'] },
+        { name: 'তথ্যপ্রযুক্তি', children: ['ইন্টারনেট সংক্রান্ত', 'কম্পিউটার ও সেলুলার নেটওয়ার্কিং সিস্টেম ও ডাটা কমিউনিকেশন', 'দৈনন্দিন জীবনে তথ্যপ্রযুক্তি', 'ক্লায়েন্ট সার্ভার ও ক্লাউড কম্পিউটিং', 'মোবাইল প্রযুক্তি ও এর বৈশিষ্ট্য', 'সোশ্যাল নেটওয়ার্কিং ও তথ্যপ্রযুক্তির বড় প্রতিষ্ঠান', 'রোবোটিক্স ও সাইবার অপরাধ', 'তথ্যপ্রযুক্তি সংক্রান্ত বিবিধ'] },
       ],
     },
   ];
 
-  const results = {};
-  for (const t of topicsData) {
-    results[t.topicName] = await replaceSubtopics(t.topicName, t.oldNames, t.newStructure);
+  try {
+    for (const group of data) {
+      const topicRes = await pool.query('SELECT id FROM topics WHERE name = $1', [group.topicName]);
+      if (topicRes.rows.length === 0) continue;
+      const topicId = topicRes.rows[0].id;
+
+      if (group.oldSubtopicNames.length > 0) {
+        const oldRes = await pool.query(
+          'SELECT id FROM subtopics WHERE topic_id = $1 AND name = ANY($2) AND parent_id IS NULL',
+          [topicId, group.oldSubtopicNames]
+        );
+        for (const row of oldRes.rows) {
+          await pool.query('UPDATE mcqs SET subtopic_id = NULL WHERE subtopic_id = $1', [row.id]);
+          await pool.query('DELETE FROM subtopics WHERE id = $1', [row.id]);
+        }
+      }
+
+      for (let i = 0; i < group.subtopics.length; i++) {
+        const sub = group.subtopics[i];
+        let subRes = await pool.query(
+          'SELECT id FROM subtopics WHERE topic_id = $1 AND name = $2 AND parent_id IS NULL',
+          [topicId, sub.name]
+        );
+        let parentId;
+        if (subRes.rows.length === 0) {
+          const insertRes = await pool.query(
+            'INSERT INTO subtopics (topic_id, name, order_index) VALUES ($1, $2, $3) RETURNING id',
+            [topicId, sub.name, i + 1]
+          );
+          parentId = insertRes.rows[0].id;
+        } else {
+          parentId = subRes.rows[0].id;
+        }
+
+        for (let j = 0; j < sub.children.length; j++) {
+          const childName = sub.children[j];
+          const existing = await pool.query(
+            'SELECT id FROM subtopics WHERE parent_id = $1 AND name = $2',
+            [parentId, childName]
+          );
+          if (existing.rows.length === 0) {
+            await pool.query(
+              'INSERT INTO subtopics (topic_id, parent_id, name, order_index) VALUES ($1, $2, $3, $4)',
+              [topicId, parentId, childName, j + 1]
+            );
+          }
+        }
+      }
+    }
+    console.log('✅ Remaining subtopics seeded successfully');
+    return { success: true };
+  } catch (err) {
+    console.error('❌ Error:', err);
+    return { success: false, error: err.message };
   }
-  return results;
 }
 
-async function seedAllNewSubtopics() {
-  const r1 = await seedSubSubtopics();
-  const r2 = await seedBanglaGrammarSubtopics();
-  return { banglaSahitya: r1, banglaGrammar: r2 };
-}
-
-module.exports = { seedTopics, seedSubtopics, seedSubSubtopics, seedBanglaGrammarSubtopics, seedBatch2Subtopics, seedAllNewSubtopics };
+module.exports = { seedTopics, seedSubtopics, seedSubSubtopics, seedBanglaGrammarSubtopics, seedAllNewSubtopics, seedRemainingSubtopics };
