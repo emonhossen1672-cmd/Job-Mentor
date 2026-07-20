@@ -115,7 +115,18 @@ async function ensureColumns() {
       ALTER TABLE model_test_submissions ADD COLUMN IF NOT EXISTS student_phone VARCHAR(20)
   
   `);
-    
+
+    // ✅ নতুন: রেজাল্ট + ভুল প্রশ্ন + মেরিট লিস্ট ফিচারের জন্য
+    await pool.query(`
+      ALTER TABLE model_test_submissions ADD COLUMN IF NOT EXISTS answers JSONB
+    `);
+    await pool.query(`
+      ALTER TABLE model_test_submissions ADD COLUMN IF NOT EXISTS wrong_ids INTEGER[]
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_model_test_submissions_test_id ON model_test_submissions(model_test_id)
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS topic_likes (
         id SERIAL PRIMARY KEY,
