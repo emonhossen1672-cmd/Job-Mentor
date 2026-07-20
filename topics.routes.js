@@ -210,23 +210,21 @@ router.post('/mcqs/mark-viewed-bulk', async (req, res) => {
   }
 });
 
-// টেম্পোরারি: parent_id কলাম তৈরি করার জন্য
 router.get('/topics/fix-parent-column', async (req, res) => {
   try {
     await pool.query(`
       ALTER TABLE subtopics ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES subtopics(id) ON DELETE CASCADE;
     `);
-    res.json({ success: true, message: 'parent_id কলাম তৈরি হয়ে গেছে' });
+    res.json({ success: true, message: 'parent_id কলাম দুই টেবিলেই যোগ হয়েছে' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// টেম্পোরারি: নতুন সাব-সাবটপিক সিড করার জন্য (একবার রান করে পরে এই রুট রিমুভ করে দিন)
 router.get('/topics/run-seed-subtopics', async (req, res) => {
   try {
-    const { seedAllNewSubtopics } = require('./seedTopics');
-    const result = await seedAllNewSubtopics();
+    const { seedRemainingSubtopics } = require('./seedTopics');
+    const result = await seedRemainingSubtopics();
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
