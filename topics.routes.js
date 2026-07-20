@@ -231,4 +231,14 @@ router.get('/topics/run-seed-subtopics', async (req, res) => {
   }
 });
 
+router.get('/topics/run-seed-bcs', async (req, res) => {
+  try {
+    const { seedBcsTopics } = require('./seedBcsTopics');
+    const result = await seedBcsTopics();
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
